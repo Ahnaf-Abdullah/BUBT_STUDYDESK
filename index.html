@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BUBT STUDY DESK</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+</head>
+<body>
+    <!-- Login -->
+    <div id="loginPanel" class="h-screen flex items-center justify-center bg-gradient-to-r from-[#0a0a3b] to-[#b3f0e5]">
+
+      <div class="w-full max-w-5xl bg-white shadow-2xl rounded-2xl overflow-hidden flex">
+
+    <!-- Left Section -->
+    <div class="w-1/2 bg-[#0a0a3b] text-white p-10 flex flex-col justify-center relative">
+      <!-- Logo -->
+      <div class="mb-10 ml-20">
+        <h1 class="text-5xl font-bold">
+          <span class="bg-blue-400 px-2 py-1 rounded-md">BUBT</span><br>
+          <span class="text-2xl tracking-wide">STUDY DESK</span>
+        </h1>
+      </div>
+
+      <!-- Form -->
+      <form id="loginForm" class="flex flex-col gap-5">
+        <input id="loginEmail" type="email" placeholder="Email" class="px-4 py-3 rounded-full text-black focus:outline-none" required>
+        <input id="loginPassword" type="password" placeholder="Password" class="px-4 py-3 rounded-full text-black focus:outline-none" required>
+        <div class="flex gap-2">
+          <button id="loginBtn" type="button" class="bg-blue-200 text-black py-3 rounded-full font-bold hover:bg-blue-300 flex-1">LOGIN</button>
+          <button id="resetDemoBtn" type="button" class="bg-gray-300 text-black py-3 rounded-full font-bold hover:bg-gray-400">Reset Demo</button>
+        </div>
+        <button id="showRegister" type="button" class="bg-blue-800 text-white py-3 rounded-full font-bold hover:bg-blue-900">REGISTER</button>
+      </form>
+
+      
+    </div>
+
+    <!-- Right Section -->
+    <div id="rightPanel" class="w-1/2 flex flex-col items-center justify-center p-10 bg-gradient-to-b from-teal-100 to-teal-200">
+      <!-- Quote view (default) -->
+      <div id="quoteView" class="w-full">
+        <blockquote class="text-xl text-center italic font-semibold text-indigo-900">
+          "Learning is a journey best taken with company.<br>
+          Each shared note shortens the distance to our goals.<br>
+          Together, we rise higher than we could alone."
+        </blockquote>
+        <div class="mt-5 w-100">
+          <img src="img/19-removebg-preview.png" alt="student" class="w-full">
+        </div>
+      </div>
+
+      <!-- Registration view (hidden by default) -->
+      <div id="registerView" class="w-full hidden">
+        <div class="mb-6">
+          <div class="bg-[#0a0a3b]/30 text-white rounded-3xl px-6 py-4 text-4xl font-extrabold text-center">
+            REGISTRATION
+          </div>
+        </div>
+
+        <form id="registerForm" class="bg-[#0a0a3b]/25 p-6 rounded-2xl text-black grid grid-cols-2 gap-4">
+          <!-- Left column -->
+          <div class="col-span-1 space-y-4">
+            <div>
+              <label class="block font-semibold text-sm mb-1">Name</label>
+              <input name="name" type="text" required class="w-full px-3 py-2 rounded-md focus:outline-none">
+            </div>
+
+            <div>
+              <label class="block font-semibold text-sm mb-1">Password</label>
+              <input name="password" type="password" required class="w-full px-3 py-2 rounded-md focus:outline-none">
+            </div>
+
+            <div>
+              <label class="block font-semibold text-sm mb-1">Confirm Password</label>
+              <input name="confirmPassword" type="password" required class="w-full px-3 py-2 rounded-md focus:outline-none">
+            </div>
+
+            <div>
+              <label class="block font-semibold text-sm mb-1">Student ID</label>
+              <input name="studentId" type="text" value="22235103204" required class="w-full px-3 py-2 rounded-md focus:outline-none">
+            </div>
+
+            <div>
+              <label class="block font-semibold text-sm mb-1">Gender</label>
+              <select name="gender" required class="w-full px-3 py-2 rounded-md text-black">
+                <option value="">Select</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Right column -->
+          <div class="col-span-1 space-y-4">
+            <div>
+              <label class="block font-semibold text-sm mb-1">Email</label>
+              <input name="email" type="email" required class="w-full px-3 py-2 rounded-md focus:outline-none">
+            </div>
+
+            <div>
+              <label class="block font-semibold text-sm mb-1">Department</label>
+              <input name="department" type="text"  required class="w-full px-3 py-2 rounded-md focus:outline-none">
+            </div>
+
+            <div>
+              <label class="block font-semibold text-sm mb-1">Intake</label>
+              <input name="intake" type="text"  required class="w-full px-3 py-2 rounded-md focus:outline-none">
+            </div>
+
+            <div>
+              <label class="block font-semibold text-sm mb-1">Section</label>
+              <input name="section" type="number" min="1" step="1" required class="w-full px-3 py-2 rounded-md focus:outline-none">
+            </div>
+
+            <div class="flex items-center gap-4">
+              <label class="sr-only">Profile</label>
+              <input id="profilePicInput" name="profilePic" type="file" accept="image/*" class="hidden">
+              <button id="uploadBtn" type="button" class="ml-auto bg-teal-100 text-black px-4 py-2 rounded-full">Upload A Profile pic</button>
+              <img id="preview" src="" alt="preview" class="w-14 h-14 object-cover rounded-md hidden">
+            </div>
+          </div>
+
+          <!-- Full width actions -->
+          <div class="col-span-2 flex items-center justify-between mt-4">
+            <button id="submitRegister" type="submit" class="bg-[#08203b] text-white px-6 py-3 rounded-full font-bold">REGISTER</button>
+            <button id="cancelRegister" type="button" class="bg-white text-black px-4 py-2 rounded-full">CANCEL</button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+    </div>
+
+    <!-- Main Page-->
+  <div id="Base" class="h-screen bg-[#0a0a3b] text-white flex hidden">
+    
+    <!-- Sidebar -->
+   <aside id="Sidebar" class="w-64 bg-gradient-to-b from-teal-400 to-indigo-700 ring-1 ring-white/8 p-6 flex flex-col items-center gap-6 rounded-r-3xl text-white">
+    <!-- Profile Pic -->
+    <div id="profilePic" class="w-48 h-64 bg-white text-black flex items-center justify-center rounded-2xl font-bold overflow-hidden">
+      <img id="profilePicImg" src="" alt="profile" class="w-full h-full object-cover rounded-2xl hidden">
+      <span id="profilePicFallback" class="">PROFILE PIC</span>
+    </div>
+
+    <!-- Username -->
+    <div class="bg-white text-black px-6 py-4 rounded-2xl w-full text-center">
+      <p class="text-sm">WELCOME</p>
+      <p id="currentUser" class="text-xl font-bold">Username</p>
+     </div>
+      
+   </aside>
+   <!-- Right Column -->
+   <main class="flex-1 p-8 relative">
+  <!-- Banner -->
+  <div id="TOP" class="flex-1 bg-teal-100/90 text-black rounded-3xl px-8 py-6 text-4xl font-extrabold mb-8">
+    <p id="BUBT STUDY DESK" class="flex text-[50px]">BUBT STUDY DESK</p>
+    <div id="Banner" class="flex bg-teal-100/90 text-black rounded-3xl m-2 text-center font-bold p-4">
+      DASHBOARD
+    </div>
+  </div>
+  
+  <!-- Move dashboard OUTSIDE and BELOW TOP -->
+  <div id="dashboard" class="bg-gradient-to-r from-teal-500/10 via-teal-700/20 to-indigo-900/40 p-8 rounded-3xl backdrop-blur-sm ring-1 ring-white/5">
+    <!-- <div class="grid grid-cols-2 gap-6">
+      <button class="bg-gradient-to-r from-teal-500 to-indigo-600 py-6 rounded-2xl text-center font-bold hover:scale-105 transition">CSE</button>
+      <button class="bg-gradient-to-r from-teal-500 to-indigo-600 py-6 rounded-2xl text-center font-bold hover:scale-105 transition">EEE</button>
+      <button class="bg-gradient-to-r from-teal-500 to-indigo-600 py-6 rounded-2xl text-center font-bold hover:scale-105 transition">BBA</button>
+      <button class="bg-gradient-to-r from-teal-500 to-indigo-600 py-6 rounded-2xl text-center font-bold hover:scale-105 transition">English</button>
+      <button class="bg-gradient-to-r from-teal-500 to-indigo-600 py-6 rounded-2xl text-center font-bold hover:scale-105 transition">Law</button>
+      <button class="bg-gradient-to-r from-teal-500 to-indigo-600 py-6 rounded-2xl text-center font-bold hover:scale-105 transition">Civil</button>
+    </div> -->
+  </div>
+</main>
+
+
+
+  </div>
+
+  <script src="js/mockdata.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
