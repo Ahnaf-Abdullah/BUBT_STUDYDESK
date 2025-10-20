@@ -1,7 +1,11 @@
-<section class="p-6 bg-gradient-to-r from-white/80 to-white/60 rounded-3xl text-black">
+<section
+  class="p-6 bg-gradient-to-r from-white/80 to-white/60 rounded-3xl text-black"
+>
   <div class="flex items-center justify-between mb-4">
     <h2 class="text-2xl font-bold">User Management</h2>
-    <p class="text-sm text-gray-700">Manage roles for demo users (changes persist to localStorage).</p>
+    <p class="text-sm text-gray-700">
+      Manage user roles and add new users to the system.
+    </p>
   </div>
 
   <div id="usersContainer" class="space-y-3 overflow-auto h-80 max-h-80">
@@ -10,11 +14,33 @@
 
   <div class="mt-6 border-t pt-4">
     <h3 class="font-semibold mb-2">Add demo user</h3>
-    <form id="addUserForm" class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-      <input name="name" placeholder="Full name" required class="px-3 py-2 rounded-md text-black" />
-      <input name="email" placeholder="email@example.com" required class="px-3 py-2 rounded-md text-black" />
-      <button class="bg-gradient-to-r from-teal-500 to-indigo-600 text-black px-3 py-2 rounded-md">Add User</button>
+    <form id="addUserForm" class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+      <input
+        name="name"
+        placeholder="Full name"
+        required
+        class="px-3 py-2 rounded-md text-black"
+      />
+      <input
+        name="email"
+        placeholder="email@example.com"
+        required
+        class="px-3 py-2 rounded-md text-black"
+      />
+      <input
+        name="studentId"
+        placeholder="Student ID (optional)"
+        class="px-3 py-2 rounded-md text-black"
+      />
+      <button
+        class="bg-gradient-to-r from-teal-500 to-indigo-600 text-black px-3 py-2 rounded-md"
+      >
+        Add User
+      </button>
     </form>
-    <p class="text-xs text-gray-600 mt-2">New users are created as <strong>student</strong> in this demo.</p>
+    <p class="text-xs text-gray-600 mt-2">
+      New users are created as <strong>student</strong> with default password:
+      defaultpass123
+    </p>
   </div>
 </section>
