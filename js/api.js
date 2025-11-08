@@ -3,6 +3,7 @@ const API_BASE = "http://localhost:5000/api";
 class APIClient {
   constructor() {
     this.token = localStorage.getItem("token");
+    this.baseURL = API_BASE;
   }
 
   async request(endpoint, options = {}) {
@@ -91,10 +92,15 @@ class APIClient {
     return await this.request(`/materials${query}`);
   }
 
-  async uploadMaterial(data) {
+  async uploadMaterial(formData) {
+    // For FormData, don't set Content-Type header (let browser handle it)
     return await this.request("/materials/upload", {
       method: "POST",
-      body: JSON.stringify(data),
+      headers: {
+        // Remove Content-Type to let browser set multipart boundary
+        Authorization: `Bearer ${this.token}`,
+      },
+      body: formData, // FormData object
     });
   }
 
@@ -102,6 +108,12 @@ class APIClient {
     return await this.request(`/materials/${materialId}/status`, {
       method: "PATCH",
       body: JSON.stringify({ status }),
+    });
+  }
+
+  async deleteMaterial(materialId) {
+    return await this.request(`/materials/${materialId}`, {
+      method: "DELETE",
     });
   }
 

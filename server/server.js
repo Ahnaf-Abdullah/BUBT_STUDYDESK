@@ -42,7 +42,13 @@ mongoose
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log("✅ MongoDB connected successfully"))
+  .then(() => {
+    console.log("✅ MongoDB connected successfully");
+    // Initialize GridFS
+    const { initGridFS } = require("./config/gridfs");
+    initGridFS(mongoose.connection.db);
+    console.log("✅ GridFS initialized");
+  })
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
 // Routes

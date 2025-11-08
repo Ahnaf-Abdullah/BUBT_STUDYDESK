@@ -537,8 +537,13 @@ document.addEventListener("DOMContentLoaded", () => {
                   <div>
                     <div class="font-semibold">${escapeHtml(m.title)}</div>
                     <div class="text-sm text-gray-600">${escapeHtml(
-                      m.courseCode
-                    )} — uploaded by ${escapeHtml(m.uploader)} ${
+                      m.courseCode || m.course?.code || "N/A"
+                    )} — uploaded by ${escapeHtml(
+              m.uploader?.name ||
+                m.uploader?.email ||
+                m.uploaderName ||
+                "Unknown"
+            )} ${
               m.status === "pending"
                 ? '<span class="text-yellow-700">(pending)</span>'
                 : ""
@@ -552,17 +557,14 @@ document.addEventListener("DOMContentLoaded", () => {
                   </div>
                 `;
             list.appendChild(item);
-            // view button triggers PDF download if available
+            // view button triggers PDF download from GridFS
             const viewBtn = item.querySelector(".viewBtn");
             if (viewBtn) {
               viewBtn.addEventListener("click", () => {
-                if (m.pdf && typeof m.pdf === "string") {
-                  const a = document.createElement("a");
-                  a.href = m.pdf;
-                  a.download = (m.title || "material") + ".pdf";
-                  document.body.appendChild(a);
-                  a.click();
-                  document.body.removeChild(a);
+                if (m.fileId || m._id) {
+                  // Use material download endpoint which updates download count
+                  const downloadUrl = `${window.API.baseURL}/materials/${m._id}/download`;
+                  window.open(downloadUrl, "_blank");
                 } else {
                   alert("No PDF available for this material.");
                 }
@@ -606,7 +608,7 @@ document.addEventListener("DOMContentLoaded", () => {
           });
         }
         if (addForm) {
-          addForm.addEventListener("submit", (e) => {
+          addForm.addEventListener("submit", async (e) => {
             e.preventDefault();
             const fd = new FormData(addForm);
             const title = (fd.get("title") || "").trim();
@@ -623,26 +625,26 @@ document.addEventListener("DOMContentLoaded", () => {
               return (addMsg.textContent = "Only PDF files are allowed.");
             if (file.size > 20 * 1024 * 1024)
               return (addMsg.textContent = "PDF size must be 20MB or less.");
-            const reader = new FileReader();
-            reader.onload = async function () {
-              try {
-                await window.API.uploadMaterial({
-                  title: title,
-                  courseId: course._id || course.id,
-                  pdfDataUrl: reader.result,
-                });
-                addMsg.textContent =
-                  "PDF uploaded successfully — pending approval.";
-                addForm.reset();
-                setTimeout(() => {
-                  showMaterialsForCourse(course, department);
-                }, 600);
-              } catch (error) {
-                console.error("Failed to upload material:", error);
-                addMsg.textContent = "Upload failed: " + error.message;
-              }
-            };
-            reader.readAsDataURL(file);
+
+            // Create FormData for file upload
+            const formData = new FormData();
+            formData.append("title", title);
+            formData.append("courseId", course._id || course.id);
+            formData.append("file", file);
+
+            try {
+              addMsg.textContent = "Uploading...";
+              await window.API.uploadMaterial(formData);
+              addMsg.textContent =
+                "PDF uploaded successfully — pending approval.";
+              addForm.reset();
+              setTimeout(() => {
+                showMaterialsForCourse(course, department);
+              }, 600);
+            } catch (error) {
+              console.error("Failed to upload material:", error);
+              addMsg.textContent = "Upload failed: " + error.message;
+            }
           });
         }
 
@@ -889,7 +891,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!container) return;
 
       const currentUser = getCurrentUser();
-      if (!currentUser || !currentUser.id) {
+      const currentUserId = currentUser?._id || currentUser?.id;
+      if (!currentUser || !currentUserId) {
         container.innerHTML =
           '<div class="text-gray-700">Please log in to view your uploads.</div>';
         return;
@@ -902,12 +905,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
           // Get materials uploaded by current user
           const allMaterials = await window.API.getMaterials();
-          const mine = allMaterials.filter(
-            (m) =>
-              m.uploader &&
-              (m.uploader.id === currentUser.id ||
-                m.uploader === currentUser.id)
-          );
+
+          const mine = allMaterials.filter((m) => {
+            if (!m.uploader) return false;
+
+            // Handle different uploader field structures
+            const materialUploaderId =
+              m.uploader._id || m.uploader.id || m.uploader;
+
+            return (
+              materialUploaderId === currentUserId ||
+              materialUploaderId === currentUser.email ||
+              (typeof m.uploader === "object" &&
+                m.uploader.email === currentUser.email)
+            );
+          });
 
           container.innerHTML = "";
 
@@ -940,7 +952,12 @@ document.addEventListener("DOMContentLoaded", () => {
               del.addEventListener("click", async () => {
                 if (confirm("Are you sure you want to delete this material?")) {
                   try {
-                    await window.API.deleteMaterial(m._id || m.id);
+                    console.log("Deleting material:", m._id || m.id);
+                    const result = await window.API.deleteMaterial(
+                      m._id || m.id
+                    );
+                    console.log("Delete result:", result);
+                    alert("Material deleted successfully!");
                     render(); // Refresh the list
                   } catch (error) {
                     console.error("Failed to delete material:", error);
@@ -1237,6 +1254,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       try {
         const response = await window.API.register(userData);
+
+        // Store user data in localStorage
+        localStorage.setItem("currentUser", JSON.stringify(response.user));
+
         alert("Registration successful! You are now logged in.");
 
         // Hide register view and show main app
@@ -1312,6 +1333,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
           const response = await window.API.login(email, password);
+
+          // Store user data in localStorage
+          localStorage.setItem("currentUser", JSON.stringify(response.user));
+
           // Handle successful login (same as before)
           const role = response.user.role;
           const config = getRoleConfig(role);

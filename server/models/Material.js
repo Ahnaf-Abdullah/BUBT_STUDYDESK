@@ -18,7 +18,7 @@ const materialSchema = new mongoose.Schema(
       enum: ["pending", "approved", "denied"],
       default: "pending",
     },
-    fileUrl: { type: String, required: true },
+    fileId: { type: mongoose.Schema.Types.ObjectId, required: true }, // GridFS file ID
     originalName: { type: String, required: true },
     fileSize: { type: Number, required: true },
     mimeType: { type: String, default: "application/pdf" },
