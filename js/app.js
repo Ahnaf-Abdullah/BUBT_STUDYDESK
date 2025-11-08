@@ -931,22 +931,43 @@ document.addEventListener("DOMContentLoaded", () => {
 
           mine.forEach((m) => {
             const row = document.createElement("div");
-            row.className = "relative";
+            row.className =
+              "p-3 bg-white/80 rounded-xl flex items-center justify-between";
+
+            const courseName = m.course ? m.course.code : "Unknown Course";
+
             row.innerHTML = `
-                  <div class="pr-16">
-                    <button class="w-full text-left bg-gradient-to-r from-teal-500 to-indigo-600 text-black rounded-3xl m-2 py-3 px-3 text-xl font-semibold transform transition duration-150 hover:shadow-md hover:text-white hover:from-indigo-700 hover:to-indigo-800">${escapeHtml(
-                      m.title
-                    )} <div class="text-sm text-gray-700">${escapeHtml(
-              m.course ? m.course.code : "Unknown Course"
-            )} • ${escapeHtml(m.status)}</div></button>
+                  <div>
+                    <div class="font-semibold">${escapeHtml(m.title)}</div>
+                    <div class="text-sm text-gray-600">${escapeHtml(
+                      courseName
+                    )} • ${escapeHtml(m.status)}</div>
                   </div>
-                  <button aria-label="delete" class="absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-r from-red-500 to-red-600 p-3 rounded-full shadow-md hover:scale-105 transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V4a1 1 0 011-1h6a1 1 0 011 1v3" />
-                    </svg>
-                  </button>
+                  <div class="flex items-center gap-3">
+                    <div class="px-2 py-1 rounded-full text-sm font-medium ${statusClass(
+                      m.status
+                    )}">${m.status}</div>
+                    <button class="viewBtn bg-teal-500 text-white px-3 py-1 rounded-md text-sm">View</button>
+                    <button aria-label="delete" class="bg-red-600 text-white px-3 py-1 rounded-md text-sm hover:bg-red-700 transition">
+                      Delete
+                    </button>
+                  </div>
                 `;
             container.appendChild(row);
+
+            // Add view button functionality
+            const viewBtn = row.querySelector(".viewBtn");
+            if (viewBtn) {
+              viewBtn.addEventListener("click", () => {
+                if (m.fileId || m._id) {
+                  const downloadUrl = `${window.API.baseURL}/materials/${m._id}/download`;
+                  window.open(downloadUrl, "_blank");
+                } else {
+                  alert("No PDF available for this material.");
+                }
+              });
+            }
+
             const del = row.querySelector('button[aria-label="delete"]');
             if (del) {
               del.addEventListener("click", async () => {
@@ -1049,26 +1070,45 @@ document.addEventListener("DOMContentLoaded", () => {
               const f = ev.target.files && ev.target.files[0];
               if (!f) return;
               const r = new FileReader();
-              r.onload = () => {
+              r.onload = async () => {
                 try {
                   const data = r.result;
                   if (picPreview) {
                     picPreview.src = data;
                     picPreview.classList.remove("hidden");
                   }
-                  // persist to localStorage and update current user
-                  const updatedUser = { ...user, profilePicUrl: data };
-                  localStorage.setItem(
-                    "currentUser",
-                    JSON.stringify(updatedUser)
-                  );
-
-                  // TODO: Also update on server via API
-                  // await window.API.updateUserProfile(user.id, { profilePicUrl: data });
-
+                  // Update on server via API and then localStorage
                   try {
+                    const updatedUser = await window.API.updateUserProfile(
+                      user.id,
+                      { profilePicUrl: data }
+                    );
+
+                    // Update localStorage with the server response
+                    const currentUserData = {
+                      ...user,
+                      profilePicUrl: updatedUser.profilePicUrl,
+                    };
+                    localStorage.setItem(
+                      "currentUser",
+                      JSON.stringify(currentUserData)
+                    );
+
+                    console.log("Profile picture updated successfully!");
                     renderProfilePic();
-                  } catch (e) {}
+                  } catch (apiError) {
+                    console.error(
+                      "Failed to update profile picture on server:",
+                      apiError
+                    );
+                    // Fallback to localStorage only if server update fails
+                    const updatedUser = { ...user, profilePicUrl: data };
+                    localStorage.setItem(
+                      "currentUser",
+                      JSON.stringify(updatedUser)
+                    );
+                    renderProfilePic();
+                  }
                 } catch (err) {
                   console.warn("profile pic save failed", err);
                 }
@@ -1082,72 +1122,118 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       function showEdit() {
-        // open modal and populate fields
+        // Create and open modal
         try {
+          // Create modal HTML
+          const modalHTML = `
+            <div id="editProfileModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                <h2 class="text-xl font-bold mb-4">Edit Profile</h2>
+                <form id="editProfileForm" class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium mb-1">Name</label>
+                    <input name="name" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2" required>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium mb-1">Department</label>
+                    <input name="department" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium mb-1">Section</label>
+                    <input name="section" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium mb-1">Intake</label>
+                    <input name="intake" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                  </div>
+                  <div class="flex gap-3 pt-4">
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex-1">Save Changes</button>
+                    <button type="button" id="cancelEditProfile" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 flex-1">Cancel</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          `;
+
+          // Remove existing modal if any
+          const existingModal = document.getElementById("editProfileModal");
+          if (existingModal) existingModal.remove();
+
+          // Add modal to body
+          document.body.insertAdjacentHTML("beforeend", modalHTML);
+
           const modal = document.getElementById("editProfileModal");
           const form = document.getElementById("editProfileForm");
+
           if (!modal || !form) return;
-          // populate
+
+          // Populate form fields
           form.elements["name"].value = user.name || "";
-          form.elements["email"].value = user.email || "";
-          form.elements["studentId"].value = user.studentId || "";
-          form.elements["gender"].value = user.gender || "";
           form.elements["department"].value = user.department || "";
           form.elements["section"].value =
             user.section != null ? String(user.section) : "";
           form.elements["intake"].value = user.intake || "";
-          modal.classList.remove("hidden");
 
+          // Handle cancel button
           const cancelBtn = document.getElementById("cancelEditProfile");
-          if (cancelBtn)
+          if (cancelBtn) {
             cancelBtn.onclick = () => {
-              modal.classList.add("hidden");
+              modal.remove();
             };
+          }
 
-          form.onsubmit = (e) => {
+          // Handle form submission
+          form.onsubmit = async (e) => {
             e.preventDefault();
-            const fd = new FormData(form);
-            const newName = (fd.get("name") || "").trim();
-            const newEmail = (fd.get("email") || "").trim().toLowerCase();
-            const newStudentId = (fd.get("studentId") || "").trim();
-            const newGender = (fd.get("gender") || "").trim();
-            const newDept = (fd.get("department") || "").trim();
-            const newSection = (fd.get("section") || "").trim();
-            const newIntake = (fd.get("intake") || "").trim();
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+
             try {
-              const state = window.__APP_STATE;
-              if (state && state.users) {
-                const u = state.users.find(
-                  (x) => x.email === (user.email || "")
-                );
-                if (u) {
-                  u.name = newName || u.name;
-                  u.email = newEmail || u.email;
-                  u.studentId = newStudentId || u.studentId;
-                  u.gender = newGender || u.gender;
-                  u.department = newDept || u.department;
-                  u.section = newSection || u.section;
-                  u.intake = newIntake || u.intake;
-                  try {
-                    localStorage.setItem(
-                      "bubt_demo_app_v1",
-                      JSON.stringify(state)
-                    );
-                  } catch (e) {}
-                  // re-render and close
-                  renderView();
-                  try {
-                    renderProfilePic();
-                  } catch (e) {}
-                  modal.classList.add("hidden");
-                }
-              }
+              submitBtn.textContent = "Saving...";
+              submitBtn.disabled = true;
+
+              const fd = new FormData(form);
+              const updatedData = {
+                name: (fd.get("name") || "").trim(),
+                department: (fd.get("department") || "").trim(),
+                section: (fd.get("section") || "").trim(),
+                intake: (fd.get("intake") || "").trim(),
+              };
+
+              // Update profile via API
+              const updatedUser = await window.API.updateUserProfile(
+                user.id,
+                updatedData
+              );
+
+              // Update localStorage with server response
+              localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+
+              // Re-render profile view
+              renderView();
+              renderProfilePic();
+
+              // Close modal
+              modal.remove();
+
+              console.log("Profile updated successfully!");
             } catch (err) {
-              console.error("profile save failed", err);
+              console.error("Profile update failed:", err);
+              alert("Failed to update profile. Please try again.");
+            } finally {
+              submitBtn.textContent = originalText;
+              submitBtn.disabled = false;
+            }
+          };
+
+          // Close modal when clicking outside
+          modal.onclick = (e) => {
+            if (e.target === modal) {
+              modal.remove();
             }
           };
         } catch (err) {
-          console.error("open modal failed", err);
+          console.error("Failed to open edit modal:", err);
         }
       }
 
@@ -1207,12 +1293,25 @@ document.addEventListener("DOMContentLoaded", () => {
       const cu = getCurrentUser();
       const img = document.getElementById("profilePicImg");
       const fallback = document.getElementById("profilePicFallback");
-      if (!img || !fallback) return;
+
+      console.log("renderProfilePic called:");
+      console.log("- Current user:", cu);
+      console.log("- Profile pic URL:", cu?.profilePicUrl);
+      console.log("- Image element:", img);
+      console.log("- Fallback element:", fallback);
+
+      if (!img || !fallback) {
+        console.warn("Missing profile pic elements");
+        return;
+      }
+
       if (cu && cu.profilePicUrl) {
+        console.log("Setting profile image:", cu.profilePicUrl);
         img.src = cu.profilePicUrl;
         img.classList.remove("hidden");
         fallback.classList.add("hidden");
       } else {
+        console.log("Showing fallback profile pic");
         img.src = "";
         img.classList.add("hidden");
         fallback.classList.remove("hidden");

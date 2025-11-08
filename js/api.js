@@ -129,6 +129,13 @@ class APIClient {
     });
   }
 
+  async updateUserProfile(userId, profileData) {
+    return await this.request(`/users/${userId}/profile`, {
+      method: "PATCH",
+      body: JSON.stringify(profileData),
+    });
+  }
+
   // Delete material (mark as denied)
   async deleteMaterial(materialId) {
     return await this.updateMaterialStatus(materialId, "denied");

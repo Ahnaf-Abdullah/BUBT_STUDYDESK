@@ -42,7 +42,7 @@ router.post("/register", async (req, res) => {
       gender,
       section,
       intake,
-      profilePicUrl: profilePicUrl || "",
+      profilePicUrl: profilePicUrl || "img/1.png",
     });
 
     await user.save();
