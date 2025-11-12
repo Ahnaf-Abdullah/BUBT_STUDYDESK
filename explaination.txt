@@ -1,0 +1,102 @@
+Overview of the demo app (developer notes)
+
+This file documents the high-level structure and behavior of the demo Study Desk app. It covers the main client-side modules and HTML fragments so a developer can understand how pieces fit together, where to change behavior, and how to test the app locally.
+
+1) index.html (app shell)
+- Purpose: The single HTML entry for the demo. It contains the login/registration panel and the primary shell (`#Base`) that houses the sidebar and the dynamic `#dashboard` content area where fragments are injected.
+- Key regions and IDs:
+	- `#loginPanel` — the login / registration UI shown by default.
+	- `#registerForm` / `#loginForm` — forms used to register and login (demo flows).
+	- `#Base` — main app shell (hidden until login). Contains:
+		- `#Sidebar` — left navigation area. Programmatically populated by `app.js`.
+		- `#profilePic` — sidebar avatar container containing `#profilePicImg` and `#profilePicFallback`.
+		- `#currentUser` — displayed username in sidebar.
+		- `#Banner` — top banner text updated to the current section.
+		- `#dashboard` — main dynamic container where fragment HTML is loaded.
+- Notes:
+	- The page includes Tailwind via CDN and loads `js/mockdata.js` then `js/app.js`.
+	- All heavy UI is implemented in fragments; `index.html` provides only the shell.
+
+2) js/mockdata.js (demo state & API)
+- Purpose: A lightweight in-browser mock backend and persistent demo state store. Uses `localStorage` to persist the demo data under the key `bubt_demo_app_v1`.
+- Data shape (seed):
+	- `users`: array of user objects: { id, name, email, password, role, department, intake, profilePic }
+	- `departments`: array of { id, name }
+	- `courses`: array of { id, departmentId, name, code }
+	- `materials`: array of { id, title, courseCode, uploader, status }
+	- `currentUserEmail`: email string (or null)
+- Public API exposed as `window.App` (key methods):
+	- getters: `users`, `departments`, `courses`, `materials`, `currentUser` (computed)
+	- `login(email, password)` — demo login (password comparison is case-insensitive by design for friction reduction). Sets `currentUserEmail` and persists state.
+	- `logout()` — clears `currentUserEmail`.
+	- `register(userData)` — creates a new user with `profilePic` support, sets them as the current user, persists.
+	- `addDepartment(name)` — appends a department and persists.
+	- `addCourse(departmentId, name, code)` — appends a course and persists.
+	- `addMaterial(title, courseCode, uploader)` — appends a material (status defaults to `pending`) and persists.
+	- `changeMaterialStatus(id, status)` — updates a material's status and persists.
+	- `updateUserRole(id, role)` — updates user role and persists.
+	- `resetToSeed()` — demo helper that restores the seeded state and persists it (useful when localStorage overrides code-seeded data).
+- Implementation notes:
+	- The state object is exposed as `window.__APP_STATE` for quick console debugging.
+	- `localStorage` read/write operations are wrapped with try/catch to avoid runtime errors in restricted environments.
+
+3) js/app.js (app wiring, fragment loader, and UI logic)
+- Purpose: Main client-side controller. It wires UI events, handles login/register flows, manages fragment loading and per-fragment initialization, and updates the sidebar and banner.
+- Core responsibilities:
+	- Fragment loading and caching: loads fragment HTML via `fetch()` and caches it in-memory (`fragmentCache`) to avoid refetching on navigation.
+	- Role-driven sidebar: determines available menu items based on the logged-in user's role (student, moderator, admin) and renders sidebar buttons dynamically.
+	- Per-fragment init hooks: after injecting fragment HTML into `#dashboard`, `runFragmentInit(path)` calls fragment-specific init functions (`initDashboard`, `initMyUploads`, `initMyProfile`, `initApproveUploads`, `initUserManagement`). These functions render dynamic lists and wire their local event handlers.
+	- Login/register flows: the registration form collects a profile picture using a hidden file input and FileReader; `register()` calls `window.App.register()` with a `profilePic` data URL when available. Login calls `window.App.login()` and on success sets sidebar buttons and shows the `#Base` shell.
+	- Sidebar avatar rendering: `renderProfilePic()` reads the current user's `profilePic` and sets `#profilePicImg.src` (or shows fallback text) so the avatar updates after login or profile changes.
+
+- Important functions (where to look and modify):
+	- `showSection(label)` — loads the fragment for the label and injects it into `#dashboard` (caching enabled).
+	- `runFragmentInit(path)` — dispatches to fragment init functions based on the fragment file name.
+	- `initDashboard()` — renders dashboard stats (total users, uploads, courses), department grid, and inline admin controls for adding departments and courses. It contains helpers `showCoursesForDepartment()` and `showMaterialsForCourse()` to render nested views.
+	- `initApproveUploads()` — renders the materials queue and wires Approve/Deny buttons (calls `App.changeMaterialStatus`).
+	- `initUserManagement()` — renders the users list, provides role dropdowns, and wiring to `App.updateUserRole` and `App.register` for demo user creation.
+	- `initMyUploads()` — lists the current user's uploaded materials and adds sample items if the current user has fewer than 3 uploads (demo convenience).
+	- `initMyProfile()` — shows profile details and provides persistent and inline picture controls that write the chosen file's data URL into the demo state and call `renderProfilePic()` to update the sidebar.
+
+- Data flow notes:
+	- UI reads/writes the demo state via `window.App` methods. The actual underlying `state` object is persisted to localStorage by `mockdata.js` so page reloads keep changes.
+	- Image uploads are converted to base64 data URLs by `FileReader` and stored on the user object as `profilePic` — acceptable for a demo environment but not for production (size and performance implications).
+
+4) fragments/*.html (modular UI pieces)
+- Purpose: Each fragment represents a panel loaded into `#dashboard`. This keeps the shell small and allows independent fragment initialization.
+- Current fragments and responsibilities:
+	- `fragments/dashboard.html` — dashboard landing: stat boxes (`#totalUsersCount`, `#totalUploadsCount`, `#totalCoursesCount`) and `#departmentsContainer`. `initDashboard()` populates it.
+	- `fragments/myUploads.html` — lists uploads by the current user in `#myUploadsList`. `initMyUploads()` renders and wires delete/deny actions.
+	- `fragments/myProfile.html` — profile details and edit UI. `initMyProfile()` handles picture change (persistent and inline), editing fields, and persisting to demo state.
+	- `fragments/approveUploads.html` — materials queue UI, includes `#materialsContainer` and a `#filterStatus` select. `initApproveUploads()` renders items and approve/deny handlers.
+	- `fragments/userManagement.html` — user list in `#usersContainer` and an `#addUserForm` block to create demo users. `initUserManagement()` renders roles and save wiring.
+
+5) How to modify behavior safely
+- If you change seeded data in `js/mockdata.js`, existing localStorage may override it. Use the Reset Demo button (in login screen) or call `window.App.resetToSeed()` from the console to restore the seed.
+- To add a new fragment:
+	1. Create `fragments/yourFragment.html` with the HTML structure and any container IDs expected by the init function.
+	2. Add an init function in `js/app.js` named `initYourFragment()` and wire it in `runFragmentInit()` by reacting to the fragment filename.
+	3. Add the fragment key to `fragmentMapBase` or to the role-specific `fragmentMap` so `showSection()` can resolve it.
+
+6) Testing and verification
+- Manual quick test flow:
+	- Open `index.html` in a browser.
+	- Register a new user with a profile picture; after registration, login and verify the sidebar avatar shows the uploaded image.
+	- Login as the seeded admin (email shown in console if a login attempt fails) and verify you can add departments and courses and approve pending uploads.
+	- Go to User Management and ensure role changes persist across reloads.
+
+- Dev utilities:
+	- `window.__APP_STATE` — inspect the raw demo state in the console.
+	- `window.App.resetToSeed()` — restore original seeded data.
+
+7) Known limitations and next steps
+- This is a front-end-only demo; data is stored in localStorage and images are stored as data URLs — fine for demos but not production.
+- No server-side validation or security: registration and login are demo-only and not secure.
+- Potential improvements:
+	- Replace base64 images with an upload endpoint or IndexedDB with size limits.
+	- Add image resizing/compression on the client to keep localStorage small.
+	- Replace innerHTML-heavy renderings with DOM-building utilities for safer XSS-resistant updates (some escaping is already present via `escapeHtml`).
+
+If you'd like, I can also generate a short README.md with these highlights and quick run/test steps, or add inline comments to `js/app.js` explaining key functions in-place.
+
+End of explanation.

@@ -1,0 +1,43 @@
+# Explanation: mockdata.js
+
+This file provides a lightweight, client-side mock backend for the BUBT Study Desk demo app. It manages demo data, user authentication, and persistence using localStorage. No real server or database is involved; all data is stored and manipulated in the browser.
+
+## Key Features
+- **Seed Data**: Defines initial demo users, departments, courses, and materials. This is the starting state for the app.
+- **Persistence**: All changes are saved to localStorage under the key `bubt_demo_app_v1`, so data survives page reloads.
+- **API Surface**: Exposes a global `window.App` object with methods for login, registration, adding departments/courses/materials, updating user roles, and resetting the demo state.
+- **User Authentication**: Supports simple login and registration flows. Passwords are compared case-insensitively for demo convenience.
+- **Material Uploads**: Materials can be added and their status changed (pending, approved, denied). For demo, PDF files are stored as data URLs.
+- **Reset Demo**: The `resetToSeed()` method restores the original seed data, useful for testing or clearing changes.
+
+## Main Data Structures
+- `users`: Array of user objects. Each user has id, name, email, password, role, department, studentId, gender, section, and profilePic.
+- `departments`: Array of department objects (id, name).
+- `courses`: Array of course objects (id, departmentId, name, code).
+- `materials`: Array of material objects (id, title, courseCode, uploader, status, pdf).
+- `currentUserEmail`: Tracks the currently logged-in user by email.
+
+## Main Methods (window.App)
+- `login(email, password)`: Authenticates a user and sets them as current.
+- `logout()`: Logs out the current user.
+- `register(userData)`: Adds a new user and logs them in.
+- `addDepartment(name)`: Adds a new department.
+- `addCourse(departmentId, name, code)`: Adds a new course.
+- `addMaterial(title, courseCode, uploader, pdfDataUrl)`: Adds a new material (PDF stored as data URL).
+- `changeMaterialStatus(id, status)`: Updates a material's status.
+- `updateUserRole(id, role)`: Changes a user's role.
+- `resetToSeed()`: Restores the original seed data.
+
+## Usage Notes
+- All data is stored in the browser; changes are not shared between users or devices.
+- PDF uploads are stored as base64 data URLs, which is fine for small demos but not suitable for production.
+- To reset the demo, use the "Reset Demo" button or call `window.App.resetToSeed()` in the browser console.
+- For debugging, the raw state is exposed as `window.__APP_STATE`.
+
+## Limitations
+- No real security: passwords are stored in plain text and compared case-insensitively.
+- No backend: all logic is client-side, so data can be manipulated by users.
+- Not suitable for production; intended for demo and UI prototyping only.
+
+---
+End of explanation.

@@ -1,3 +1,12 @@
+// Import modules
+import { auth } from "./modules/auth.js";
+import { ui } from "./modules/ui.js";
+import { fragments } from "./modules/fragments.js";
+import { dashboard } from "./modules/dashboard.js";
+import { materials } from "./modules/materials.js";
+import { profile } from "./modules/profile.js";
+import { userManagement } from "./modules/userManagement.js";
+
 document.addEventListener("DOMContentLoaded", () => {
   // Elements
   const showRegisterBtn = document.getElementById("showRegister");
@@ -6,7 +15,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const uploadBtn = document.getElementById("uploadBtn");
   const profilePicInput = document.getElementById("profilePicInput");
   const preview = document.getElementById("preview");
-  const profilePicEl = document.getElementById("profilePic");
   const cancelRegister = document.getElementById("cancelRegister");
   const registerForm = document.getElementById("registerForm");
   const loginForm = document.getElementById("loginForm");
@@ -16,133 +24,20 @@ document.addEventListener("DOMContentLoaded", () => {
   const currentUserEl = document.getElementById("currentUser");
   const bannerEl = document.getElementById("Banner");
 
-  // Compute sidebar labels and fragment map based on role
-  function getRoleConfig(role) {
-    role = (role || "").toLowerCase();
-    const base = ["DASHBOARD", "MY UPLOADS", "MY PROFILE"];
-    if (role === "moderator") {
-      return {
-        labels: [...base, "APPROVE UPLOADS"],
-        map: Object.assign({}, fragmentMapBase, {
-          "APPROVE UPLOADS": "fragments/approveUploads.html",
-        }),
-      };
-    }
-    if (role === "admin") {
-      return {
-        labels: [...base, "APPROVE UPLOADS", "USER MANAGEMENT"],
-        map: Object.assign({}, fragmentMapBase, {
-          "APPROVE UPLOADS": "fragments/approveUploads.html",
-          "USER MANAGEMENT": "fragments/userManagement.html",
-        }),
-      };
-    }
-    // default student
-    return { labels: base, map: Object.assign({}, fragmentMapBase) };
-  }
-
-  // Helper: render sidebar buttons as buttons (not links)
-  function renderSidebarButtons() {
-    const sidebar = document.getElementById("Sidebar");
-    if (!sidebar) return;
-    // remove previously generated buttons
-    Array.from(sidebar.querySelectorAll('[data-generated="true"]')).forEach(
-      (n) => n.remove()
-    );
-
-    sidebarButtonLabels.forEach((label) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.dataset.generated = "true";
-      btn.textContent = label;
-      btn.className =
-        "block bg-white text-black w-full py-3 rounded-2xl font-semibold hover:bg-gray-200 text-center mb-3";
-      btn.addEventListener("click", () => showSection(label));
-      sidebar.appendChild(btn);
-    });
-
-    // Logout button
-    const logout = document.createElement("button");
-    logout.type = "button";
-    logout.dataset.generated = "true";
-    logout.textContent = "LOGOUT";
-    logout.className =
-      "block bg-red-600 text-white w-full py-3 rounded-2xl font-semibold hover:bg-red-700 text-center mt-2";
-    logout.addEventListener("click", () => {
-      // Clear user data and call API logout
-      if (window.API && typeof window.API.logout === "function") {
-        window.API.logout();
-      }
-
-      // Clear any cached user data
-      localStorage.removeItem("currentUser");
-      localStorage.removeItem("token");
-
-      // Reset UI state
-      const currentUserEl = document.getElementById("currentUser");
-      if (currentUserEl) currentUserEl.textContent = "";
-
-      // Clear dashboard content
-      const dashboardEl = document.getElementById("dashboard");
-      if (dashboardEl) dashboardEl.innerHTML = "";
-
-      // Clear profile pic
-      const profilePicImg = document.getElementById("profilePicImg");
-      const profilePicFallback = document.getElementById("profilePicFallback");
-      if (profilePicImg) {
-        profilePicImg.src = "";
-        profilePicImg.classList.add("hidden");
-      }
-      if (profilePicFallback) {
-        profilePicFallback.classList.remove("hidden");
-      }
-
-      // Show login panel again
-      basePanel.classList.add("hidden");
-      loginPanel.classList.remove("hidden");
-    });
-    sidebar.appendChild(logout);
-  }
-
-  // fragment cache
+  // Fragment cache and mapping
   const fragmentCache = new Map();
-
-  // base fragment mapping
   const fragmentMapBase = {
     DASHBOARD: "fragments/dashboard.html",
     "MY UPLOADS": "fragments/myUploads.html",
     "MY PROFILE": "fragments/myProfile.html",
   };
 
-  // current fragment map & labels (will be set on login)
   let fragmentMap = Object.assign({}, fragmentMapBase);
   let sidebarButtonLabels = ["DASHBOARD", "MY UPLOADS", "MY PROFILE"];
 
-  // helper to get current user's role from localStorage
-  function getCurrentUserRole() {
-    try {
-      const currentUser = JSON.parse(
-        localStorage.getItem("currentUser") || "{}"
-      );
-      return currentUser.role || "student";
-    } catch (e) {
-      return "student";
-    }
-  }
-
-  // helper to get current user from localStorage
-  function getCurrentUser() {
-    try {
-      return JSON.parse(localStorage.getItem("currentUser") || "{}");
-    } catch (e) {
-      return null;
-    }
-  }
-
-  // simple section switcher that loads fragment HTML into dashboard (cached)
+  // Section switcher - loads fragment HTML into dashboard
   async function showSection(label) {
     if (!dashboardEl) return;
-    // update banner to reflect current panel
     try {
       if (bannerEl && label) bannerEl.textContent = label;
     } catch (e) {
@@ -150,20 +45,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     const path = fragmentMap[label];
     if (!path) return;
-    // use cache
+
+    // Use cache
     if (fragmentCache.has(path)) {
       dashboardEl.innerHTML = fragmentCache.get(path);
-      // run any fragment-specific init
       runFragmentInit(path);
       return;
     }
+
     try {
-      const res = await fetch(path);
-      if (!res.ok) throw new Error("Failed to load " + path);
-      const html = await res.text();
+      const html = await fragments.loadFragment(path);
       fragmentCache.set(path, html);
       dashboardEl.innerHTML = html;
-      // run any fragment-specific init
       runFragmentInit(path);
     } catch (err) {
       dashboardEl.innerHTML = `<div class="text-red-400">Error loading section: ${err.message}</div>`;
@@ -171,1077 +64,32 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Run per-fragment initialization (hook after fragment injection)
+  // Run per-fragment initialization
   function runFragmentInit(path) {
     if (!path) return;
-    // normalize
     const p = path.replace(/\\\\/g, "/");
+
     if (p.endsWith("approveUploads.html")) {
-      initApproveUploads();
+      materials.initApproveUploads();
     }
     if (p.endsWith("userManagement.html")) {
-      initUserManagement();
+      userManagement.init();
     }
     if (p.endsWith("dashboard.html")) {
-      initDashboard();
+      dashboard.init();
     }
     if (p.endsWith("myUploads.html")) {
-      initMyUploads();
+      materials.initMyUploads();
     }
     if (p.endsWith("myProfile.html")) {
-      initMyProfile();
-    }
-    // other fragments can be added here
-  }
-
-  // Initialize Dashboard fragment: show departments, and swap to courses grid when clicked
-  async function initDashboard() {
-    try {
-      const container = document.getElementById("departmentsContainer");
-      const totalUsersEl = document.getElementById("totalUsersCount");
-      const totalUploadsEl = document.getElementById("totalUploadsCount");
-      const totalCoursesEl = document.getElementById("totalCoursesCount");
-      if (!container) return;
-
-      // populate top stats from API (role-based)
-      try {
-        const userRole = getCurrentUserRole();
-
-        // Only admins can see user count, others can see materials and courses
-        let users = [];
-        if (userRole === "admin") {
-          users = await window.API.getUsers().catch(() => []);
-        }
-
-        const [materials, courses] = await Promise.all([
-          window.API.getMaterials().catch(() => []),
-          window.API.getCourses().catch(() => []),
-        ]);
-
-        if (totalUsersEl) {
-          if (userRole === "admin") {
-            totalUsersEl.textContent = String(users.length || 0);
-          } else {
-            totalUsersEl.textContent = "-";
-          }
-        }
-        if (totalUploadsEl)
-          totalUploadsEl.textContent = String(materials.length || 0);
-        if (totalCoursesEl)
-          totalCoursesEl.textContent = String(courses.length || 0);
-      } catch (e) {
-        console.warn("Failed to load dashboard stats:", e);
-        // Set default values if API fails
-        if (totalUsersEl) totalUsersEl.textContent = "0";
-        if (totalUploadsEl) totalUploadsEl.textContent = "0";
-        if (totalCoursesEl) totalCoursesEl.textContent = "0";
-      }
-
-      async function renderDepartments() {
-        container.innerHTML = "";
-        let deps = [];
-        try {
-          deps = await window.API.getDepartments();
-        } catch (e) {
-          console.warn("Failed to load departments:", e);
-          deps = [];
-        }
-
-        // actions area (admin only)
-        const role = getCurrentUserRole();
-        const actions = document.createElement("div");
-        actions.className = "mb-4 flex items-center justify-end gap-2";
-        if (role === "admin") {
-          actions.innerHTML = `
-                <div id="addDeptWrap" class="flex items-center gap-2">
-                  <input id="newDeptName" placeholder="New department name" class="px-3 py-2 rounded-md text-black" />
-                  <button id="addDeptBtn" class="bg-gradient-to-r from-indigo-500 to-indigo-700 text-white px-3 py-2 rounded-md">Add Department</button>
-                </div>
-              `;
-        }
-        container.appendChild(actions);
-
-        if (deps.length === 0) {
-          const none = document.createElement("div");
-          none.className = "text-gray-600";
-          none.textContent = "No departments";
-          container.appendChild(none);
-          // still wire add dept button if present
-          const addDeptBtnEmpty = document.getElementById("addDeptBtn");
-          if (addDeptBtnEmpty) {
-            addDeptBtnEmpty.addEventListener("click", async () => {
-              const input = document.getElementById("newDeptName");
-              const name = input ? (input.value || "").trim() : "";
-              if (!name) return alert("Provide department name");
-
-              try {
-                await window.API.addDepartment(name);
-                // refresh stats and re-render
-                const [users, materials, courses] = await Promise.all([
-                  window.API.getUsers().catch(() => []),
-                  window.API.getMaterials().catch(() => []),
-                  window.API.getCourses().catch(() => []),
-                ]);
-                if (totalUsersEl)
-                  totalUsersEl.textContent = String(users.length || 0);
-                if (totalUploadsEl)
-                  totalUploadsEl.textContent = String(materials.length || 0);
-                if (totalCoursesEl)
-                  totalCoursesEl.textContent = String(courses.length || 0);
-
-                renderDepartments();
-                if (input) input.value = "";
-                alert("Department added successfully!");
-              } catch (error) {
-                console.error("Failed to add department:", error);
-                alert("Failed to add department: " + error.message);
-              }
-            });
-          }
-          return;
-        }
-
-        const grid = document.createElement("div");
-        grid.className = "grid grid-cols-2 gap-6";
-        deps.forEach((d) => {
-          const btn = document.createElement("button");
-          btn.className =
-            "bg-gradient-to-r from-teal-500 to-indigo-600 py-6 rounded-2xl text-center font-bold hover:scale-105 transition";
-          btn.textContent = d.name;
-          btn.addEventListener("click", () => showCoursesForDepartment(d));
-          grid.appendChild(btn);
-        });
-        container.appendChild(grid);
-
-        // wire add department action when list present
-        const addDeptBtn = document.getElementById("addDeptBtn");
-        if (addDeptBtn) {
-          addDeptBtn.addEventListener("click", async () => {
-            const input = document.getElementById("newDeptName");
-            const name = input ? (input.value || "").trim() : "";
-            if (!name) return alert("Provide department name");
-
-            try {
-              await window.API.addDepartment(name);
-
-              // refresh stats
-              const userRole = getCurrentUserRole();
-              let users = [];
-              if (userRole === "admin") {
-                users = await window.API.getUsers().catch(() => []);
-              }
-
-              const [materials, courses] = await Promise.all([
-                window.API.getMaterials().catch(() => []),
-                window.API.getCourses().catch(() => []),
-              ]);
-
-              if (totalUsersEl && userRole === "admin") {
-                totalUsersEl.textContent = String(users.length || 0);
-              }
-              if (totalUploadsEl)
-                totalUploadsEl.textContent = String(materials.length || 0);
-              if (totalCoursesEl)
-                totalCoursesEl.textContent = String(courses.length || 0);
-
-              renderDepartments();
-              if (input) input.value = "";
-              alert("Department added successfully!");
-            } catch (error) {
-              console.error("Failed to add department:", error);
-              alert("Failed to add department: " + error.message);
-            }
-          });
-        }
-      }
-
-      async function showCoursesForDepartment(department) {
-        // create courses grid markup similar to courses.html
-        let courses = [];
-        try {
-          const allCourses = await window.API.getCourses();
-          courses = allCourses.filter((c) => {
-            const courseDeptId =
-              c.department?._id || c.department?.id || c.department;
-            const targetDeptId = department._id || department.id;
-            return courseDeptId === targetDeptId;
-          });
-        } catch (error) {
-          console.error("Failed to fetch courses:", error);
-          courses = [];
-        }
-        const wrapper = document.createElement("div");
-        wrapper.innerHTML = `
-              <div class="mb-4 flex items-center justify-between">
-                <h3 class="text-xl font-bold">${escapeHtml(
-                  department.name
-                )} — Courses</h3>
-                <button id="backToDeps" class="text-sm bg-white/90 text-black px-3 py-1 rounded-md">Back</button>
-              </div>
-              <div id="courseActions" class="mb-4 flex items-center justify-end"></div>
-            `;
-        const grid = document.createElement("div");
-        grid.className = "grid grid-cols-2 md:grid-cols-3 gap-6";
-        if (courses.length === 0) {
-          grid.innerHTML =
-            '<div class="text-gray-700 p-4">No courses for this department.</div>';
-        } else {
-          courses.forEach((c) => {
-            const b = document.createElement("button");
-            b.className =
-              "bg-gradient-to-r from-teal-500 to-indigo-600 py-6 rounded-2xl text-center font-bold hover:scale-105 transition";
-            b.textContent = c.name;
-            // clicking a course opens the materials panel for that course
-            b.addEventListener("click", () =>
-              showMaterialsForCourse(c, department)
-            );
-            grid.appendChild(b);
-          });
-        }
-        wrapper.appendChild(grid);
-        container.innerHTML = "";
-        container.appendChild(wrapper);
-        // add course control for admin/moderator
-        try {
-          const role2 = getCurrentUserRole();
-          const courseActions = document.getElementById("courseActions");
-          if (courseActions && (role2 === "admin" || role2 === "moderator")) {
-            courseActions.innerHTML = `
-                  <div id="addCourseWrap" class="flex items-center gap-2">
-                    <input id="newCourseName" placeholder="Course name" class="px-3 py-2 rounded-md text-black" />
-                    <input id="newCourseCode" placeholder="Code" class="px-3 py-2 rounded-md text-black" />
-                    <button id="addCourseBtn" class="bg-gradient-to-r from-indigo-500 to-indigo-700 text-white px-3 py-2 rounded-md">Add Course</button>
-                  </div>
-                `;
-            const addCourseBtn = document.getElementById("addCourseBtn");
-            if (addCourseBtn) {
-              addCourseBtn.addEventListener("click", async () => {
-                const name = (
-                  document.getElementById("newCourseName")?.value || ""
-                ).trim();
-                const code = (
-                  document.getElementById("newCourseCode")?.value || ""
-                ).trim();
-                if (!name || !code)
-                  return alert("Provide course name and code");
-
-                try {
-                  await window.API.addCourse({
-                    name: name,
-                    code: code,
-                    departmentId: department._id || department.id,
-                  });
-
-                  // Update stats
-                  const courses = await window.API.getCourses().catch(() => []);
-                  if (totalCoursesEl) {
-                    totalCoursesEl.textContent = String(courses.length || 0);
-                  }
-
-                  // Clear inputs
-                  const nameInput = document.getElementById("newCourseName");
-                  const codeInput = document.getElementById("newCourseCode");
-                  if (nameInput) nameInput.value = "";
-                  if (codeInput) codeInput.value = "";
-
-                  alert("Course added successfully!");
-                  showCoursesForDepartment(department);
-                } catch (error) {
-                  console.error("Failed to add course:", error);
-                  alert("Failed to add course: " + error.message);
-                }
-              });
-            }
-          }
-        } catch (e) {
-          /* ignore */
-        }
-        const back = document.getElementById("backToDeps");
-        if (back) back.addEventListener("click", renderDepartments);
-      }
-
-      // Show materials for a given course
-      async function showMaterialsForCourse(course, department) {
-        // Show approved materials plus any pending materials uploaded by the current user
-        const currentUser = getCurrentUser();
-        const currentUserName = currentUser
-          ? currentUser.name || currentUser.email
-          : null;
-        let materials = [];
-        try {
-          const allMaterials = await window.API.getMaterials();
-          materials = allMaterials.filter((m) => {
-            const sameCourse =
-              (m.course?.code || "").toLowerCase() ===
-              (course.code || "").toLowerCase();
-            const allowed =
-              m.status === "approved" ||
-              (currentUserName &&
-                (m.uploader?.name === currentUserName ||
-                  m.uploader?.email === currentUserName));
-            return sameCourse && allowed;
-          });
-        } catch (error) {
-          console.error("Failed to fetch materials:", error);
-          materials = [];
-        }
-        const wrap = document.createElement("div");
-        wrap.innerHTML = `
-              <div class="mb-4 flex items-center justify-between">
-                <div>
-                  <h3 class="text-xl font-bold">${escapeHtml(
-                    course.name
-                  )} <span class="text-sm text-gray-600">(${escapeHtml(
-          course.code || ""
-        )})</span></h3>
-                  <div class="text-sm text-gray-600">Department: ${escapeHtml(
-                    department.name
-                  )}</div>
-                </div>
-                <div class="flex items-center gap-2">
-                  <button id="backToCourses" class="text-sm bg-white/90 text-black px-3 py-1 rounded-md">Back</button>
-                  <button id="backToDeps2" class="text-sm bg-white/80 text-black px-3 py-1 rounded-md">Departments</button>
-                </div>
-              </div>
-              <div class="mb-4 flex items-center justify-between">
-                <div class="text-sm text-gray-700">Add new material for this course</div>
-                <div>
-                  <button id="showAddMaterial" class="bg-gradient-to-r from-teal-500 to-indigo-600 text-white px-3 py-1 rounded-md text-sm">Add Material</button>
-                </div>
-              </div>
-              <div id="addMaterialFormWrap" class="mb-4 hidden">
-                <form id="addMaterialForm" class="grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
-                  <input name="title" placeholder="Material title" required class="px-3 py-2 rounded-md text-black col-span-2" />
-                  <input name="uploader" placeholder="Your name" class="px-3 py-2 rounded-md text-black" />
-                  <input name="pdf" type="file" accept="application/pdf" required class="px-3 py-2 rounded-md text-black col-span-3" />
-                  <div class="col-span-3 flex items-center gap-2">
-                    <button type="submit" class="bg-green-600 text-white px-3 py-1 rounded-md">Upload PDF</button>
-                    <button type="button" id="cancelAddMaterial" class="bg-gray-300 text-black px-3 py-1 rounded-md">Cancel</button>
-                    <div id="addMaterialMsg" class="text-sm text-gray-700 ml-4"></div>
-                  </div>
-                </form>
-              </div>
-            `;
-
-        const list = document.createElement("div");
-        list.className = "space-y-3";
-        if (materials.length === 0) {
-          list.innerHTML =
-            '<div class="text-gray-700 p-4">No approved materials for this course.</div>';
-        } else {
-          materials.forEach((m) => {
-            const item = document.createElement("div");
-            item.className =
-              "p-3 bg-white/80 rounded-xl flex items-center justify-between";
-            item.innerHTML = `
-                  <div>
-                    <div class="font-semibold">${escapeHtml(m.title)}</div>
-                    <div class="text-sm text-gray-600">${escapeHtml(
-                      m.courseCode || m.course?.code || "N/A"
-                    )} — uploaded by ${escapeHtml(
-              m.uploader?.name ||
-                m.uploader?.email ||
-                m.uploaderName ||
-                "Unknown"
-            )} ${
-              m.status === "pending"
-                ? '<span class="text-yellow-700">(pending)</span>'
-                : ""
-            }</div>
-                  </div>
-                  <div class="flex items-center gap-3">
-                    <div class="px-2 py-1 rounded-full text-sm font-medium ${statusClass(
-                      m.status
-                    )}">${m.status}</div>
-                    <button class="viewBtn bg-teal-500 text-white px-3 py-1 rounded-md text-sm">View</button>
-                  </div>
-                `;
-            list.appendChild(item);
-            // view button triggers PDF download from GridFS
-            const viewBtn = item.querySelector(".viewBtn");
-            if (viewBtn) {
-              viewBtn.addEventListener("click", () => {
-                if (m.fileId || m._id) {
-                  // Use material download endpoint which updates download count
-                  const downloadUrl = `${window.API.baseURL}/materials/${m._id}/download`;
-                  window.open(downloadUrl, "_blank");
-                } else {
-                  alert("No PDF available for this material.");
-                }
-              });
-            }
-          });
-        }
-
-        wrap.appendChild(list);
-        container.innerHTML = "";
-        container.appendChild(wrap);
-
-        // wire add material UI
-        const showAdd = document.getElementById("showAddMaterial");
-        const addWrap = document.getElementById("addMaterialFormWrap");
-        const addForm = document.getElementById("addMaterialForm");
-        const cancelAdd = document.getElementById("cancelAddMaterial");
-        const addMsg = document.getElementById("addMaterialMsg");
-        if (showAdd && addWrap) {
-          showAdd.addEventListener("click", () => {
-            addWrap.classList.remove("hidden");
-            showAdd.classList.add("hidden");
-            // prefill uploader
-            const up =
-              addForm && addForm.querySelector('input[name="uploader"]');
-            if (up)
-              up.value =
-                window.App &&
-                window.App.currentUser &&
-                window.App.currentUser.name
-                  ? window.App.currentUser.name
-                  : "";
-          });
-        }
-        if (cancelAdd && addWrap && showAdd) {
-          cancelAdd.addEventListener("click", () => {
-            addWrap.classList.add("hidden");
-            showAdd.classList.remove("hidden");
-            addMsg.textContent = "";
-            addForm && addForm.reset();
-          });
-        }
-        if (addForm) {
-          addForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const fd = new FormData(addForm);
-            const title = (fd.get("title") || "").trim();
-            const currentUser = getCurrentUser();
-            const uploader =
-              (fd.get("uploader") || "").trim() ||
-              (currentUser && (currentUser.name || currentUser.email)) ||
-              "guest";
-            const file = addForm.querySelector('input[name="pdf"]').files[0];
-            if (!title) return alert("Provide a title");
-            if (!file)
-              return (addMsg.textContent = "Please select a PDF file.");
-            if (file.type !== "application/pdf")
-              return (addMsg.textContent = "Only PDF files are allowed.");
-            if (file.size > 20 * 1024 * 1024)
-              return (addMsg.textContent = "PDF size must be 20MB or less.");
-
-            // Create FormData for file upload
-            const formData = new FormData();
-            formData.append("title", title);
-            formData.append("courseId", course._id || course.id);
-            formData.append("file", file);
-
-            try {
-              addMsg.textContent = "Uploading...";
-              await window.API.uploadMaterial(formData);
-              addMsg.textContent =
-                "PDF uploaded successfully — pending approval.";
-              addForm.reset();
-              setTimeout(() => {
-                showMaterialsForCourse(course, department);
-              }, 600);
-            } catch (error) {
-              console.error("Failed to upload material:", error);
-              addMsg.textContent = "Upload failed: " + error.message;
-            }
-          });
-        }
-
-        const backBtn = document.getElementById("backToCourses");
-        if (backBtn)
-          backBtn.addEventListener("click", () =>
-            showCoursesForDepartment(department)
-          );
-        const backDepsBtn = document.getElementById("backToDeps2");
-        if (backDepsBtn)
-          backDepsBtn.addEventListener("click", renderDepartments);
-      }
-
-      renderDepartments();
-    } catch (e) {
-      console.error("initDashboard error", e);
+      profile.init();
     }
   }
 
-  // Initialize Approve Uploads fragment: render materials and wire approve/deny/filter
-  async function initApproveUploads() {
-    try {
-      const container = document.getElementById("materialsContainer");
-      const filter = document.getElementById("filterStatus");
-      if (!container) return;
-
-      async function renderMaterials(statusFilter) {
-        try {
-          container.innerHTML =
-            '<div class="text-gray-500">Loading materials...</div>';
-
-          const items = await window.API.getMaterials();
-          const filtered =
-            statusFilter && statusFilter !== "all"
-              ? items.filter((i) => i.status === statusFilter)
-              : items;
-
-          container.innerHTML = "";
-          if (filtered.length === 0) {
-            container.innerHTML =
-              '<div class="text-gray-400">No materials found.</div>';
-            return;
-          }
-
-          filtered.forEach((m) => {
-            const el = document.createElement("div");
-            el.className =
-              "p-3 bg-white/80 rounded-xl flex items-center justify-between";
-
-            const uploaderName = m.uploader
-              ? m.uploader.name || m.uploader
-              : "Unknown";
-            const courseName = m.course ? m.course.code : "Unknown Course";
-
-            el.innerHTML = `
-                  <div>
-                    <div class="font-semibold">${escapeHtml(m.title)}</div>
-                    <div class="text-sm text-gray-600">${escapeHtml(
-                      courseName
-                    )} — uploaded by ${escapeHtml(uploaderName)}</div>
-                  </div>
-                  <div class="flex items-center gap-3">
-                    <div class="px-2 py-1 rounded-full text-sm font-medium ${statusClass(
-                      m.status
-                    )}">${m.status}</div>
-                    ${
-                      m.status === "pending"
-                        ? `<button data-id="${
-                            m._id || m.id
-                          }" data-action="approve" class="approve-btn bg-green-600 text-white px-3 py-1 rounded-md text-sm">Approve</button>
-                    <button data-id="${
-                      m._id || m.id
-                    }" data-action="deny" class="deny-btn bg-red-600 text-white px-3 py-1 rounded-md text-sm">Deny</button>`
-                        : ""
-                    }
-                  </div>
-                `;
-            container.appendChild(el);
-          });
-
-          // attach listeners
-          Array.from(container.querySelectorAll(".approve-btn")).forEach(
-            (b) => {
-              b.addEventListener("click", async (e) => {
-                const id = b.dataset.id;
-                try {
-                  await window.API.updateMaterialStatus(id, "approved");
-                  renderMaterials(filter?.value || "all");
-                } catch (error) {
-                  console.error("Failed to approve material:", error);
-                  alert("Failed to approve material: " + error.message);
-                }
-              });
-            }
-          );
-
-          Array.from(container.querySelectorAll(".deny-btn")).forEach((b) => {
-            b.addEventListener("click", async (e) => {
-              const id = b.dataset.id;
-              try {
-                await window.API.updateMaterialStatus(id, "denied");
-                renderMaterials(filter?.value || "all");
-              } catch (error) {
-                console.error("Failed to deny material:", error);
-                alert("Failed to deny material: " + error.message);
-              }
-            });
-          });
-        } catch (error) {
-          console.error("Failed to load materials:", error);
-          container.innerHTML =
-            '<div class="text-red-500">Failed to load materials. Please try again.</div>';
-        }
-      }
-
-      // wire filter
-      if (filter) {
-        filter.addEventListener("change", () => renderMaterials(filter.value));
-      }
-      // initial render
-      renderMaterials(filter?.value || "all");
-    } catch (e) {
-      console.error("initApproveUploads error", e);
-    }
-  }
-
-  // small helpers
-  function statusClass(status) {
-    if (!status) return "bg-gray-200 text-gray-800";
-    if (status === "pending") return "bg-yellow-100 text-yellow-800";
-    if (status === "approved") return "bg-green-100 text-green-800";
-    if (status === "denied") return "bg-red-100 text-red-800";
-    return "bg-gray-100 text-gray-800";
-  }
-
-  function escapeHtml(str) {
-    if (str == null) return "";
-    return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
-  // Initialize User Management fragment
-  function initUserManagement() {
-    try {
-      const container = document.getElementById("usersContainer");
-      const addForm = document.getElementById("addUserForm");
-      if (!container) return;
-
-      async function renderUsers() {
-        container.innerHTML = "";
-        let users = [];
-        try {
-          users = await window.API.getUsers();
-        } catch (error) {
-          console.error("Failed to fetch users:", error);
-          container.innerHTML =
-            '<div class="text-black">Error loading users</div>';
-          return;
-        }
-        if (users.length === 0) {
-          container.innerHTML = '<div class="text-black">No users</div>';
-          return;
-        }
-        users.forEach((u) => {
-          const row = document.createElement("div");
-          row.className =
-            "flex items-center justify-between bg-white/10 p-3 rounded-md";
-          row.innerHTML = `
-                <div>
-                  <div class="font-semibold">${escapeHtml(u.name)}</div>
-                  <div class="text-sm text-black">${escapeHtml(u.email)}</div>
-                </div>
-                <div class="flex items-center gap-2">
-                  <select class="roleSelect text-black px-2 py-1 rounded-md">
-                    <option value="student">student</option>
-                    <option value="moderator">moderator</option>
-                    <option value="admin">admin</option>
-                  </select>
-                  <button class="saveRoleBtn bg-gradient-to-r from-teal-500 to-indigo-600 text-black px-3 py-1 rounded-md">Save</button>
-                </div>
-              `;
-          container.appendChild(row);
-          const select = row.querySelector(".roleSelect");
-          select.value = u.role || "student";
-          const saveBtn = row.querySelector(".saveRoleBtn");
-          saveBtn.addEventListener("click", async () => {
-            try {
-              await window.API.updateUserRole(u._id || u.id, select.value);
-              renderUsers();
-              alert(`Role updated for ${u.name}: ${select.value}`);
-            } catch (error) {
-              console.error("Failed to update user role:", error);
-              alert("Failed to update role: " + error.message);
-            }
-          });
-        });
-      }
-
-      if (addForm) {
-        addForm.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const fd = new FormData(addForm);
-          const name = (fd.get("name") || "").trim();
-          const email = (fd.get("email") || "").trim().toLowerCase();
-          const studentId = (fd.get("studentId") || "").trim();
-          if (!name || !email) return alert("Provide name and email");
-
-          try {
-            // Create user with default password (they can change it later)
-            await window.API.register({
-              name,
-              email,
-              password: "defaultpass123", // Default password
-              studentId: studentId || `STU${Date.now()}`, // Generate student ID if not provided
-              department: "General",
-              gender: "Other",
-              section: "A",
-              intake: new Date().getFullYear().toString(),
-            });
-            addForm.reset();
-            renderUsers();
-            alert("User added successfully! Default password: defaultpass123");
-          } catch (error) {
-            console.error("Failed to add user:", error);
-            alert("Failed to add user: " + error.message);
-          }
-        });
-      }
-
-      renderUsers();
-    } catch (e) {
-      console.error("initUserManagement error", e);
-    }
-  }
-
-  // Initialize My Uploads fragment: list materials uploaded by current user
-  async function initMyUploads() {
-    try {
-      const container = document.getElementById("myUploadsList");
-      if (!container) return;
-
-      const currentUser = getCurrentUser();
-      const currentUserId = currentUser?._id || currentUser?.id;
-      if (!currentUser || !currentUserId) {
-        container.innerHTML =
-          '<div class="text-gray-700">Please log in to view your uploads.</div>';
-        return;
-      }
-
-      async function render() {
-        try {
-          container.innerHTML =
-            '<div class="text-gray-500">Loading your uploads...</div>';
-
-          // Get materials uploaded by current user
-          const allMaterials = await window.API.getMaterials();
-
-          const mine = allMaterials.filter((m) => {
-            if (!m.uploader) return false;
-
-            // Handle different uploader field structures
-            const materialUploaderId =
-              m.uploader._id || m.uploader.id || m.uploader;
-
-            return (
-              materialUploaderId === currentUserId ||
-              materialUploaderId === currentUser.email ||
-              (typeof m.uploader === "object" &&
-                m.uploader.email === currentUser.email)
-            );
-          });
-
-          container.innerHTML = "";
-
-          if (mine.length === 0) {
-            container.innerHTML =
-              '<div class="text-gray-700">You have not uploaded any materials yet. Upload your first material from the Dashboard!</div>';
-            return;
-          }
-
-          mine.forEach((m) => {
-            const row = document.createElement("div");
-            row.className =
-              "p-3 bg-white/80 rounded-xl flex items-center justify-between";
-
-            const courseName = m.course ? m.course.code : "Unknown Course";
-
-            row.innerHTML = `
-                  <div>
-                    <div class="font-semibold">${escapeHtml(m.title)}</div>
-                    <div class="text-sm text-gray-600">${escapeHtml(
-                      courseName
-                    )} • ${escapeHtml(m.status)}</div>
-                  </div>
-                  <div class="flex items-center gap-3">
-                    <div class="px-2 py-1 rounded-full text-sm font-medium ${statusClass(
-                      m.status
-                    )}">${m.status}</div>
-                    <button class="viewBtn bg-teal-500 text-white px-3 py-1 rounded-md text-sm">View</button>
-                    <button aria-label="delete" class="bg-red-600 text-white px-3 py-1 rounded-md text-sm hover:bg-red-700 transition">
-                      Delete
-                    </button>
-                  </div>
-                `;
-            container.appendChild(row);
-
-            // Add view button functionality
-            const viewBtn = row.querySelector(".viewBtn");
-            if (viewBtn) {
-              viewBtn.addEventListener("click", () => {
-                if (m.fileId || m._id) {
-                  const downloadUrl = `${window.API.baseURL}/materials/${m._id}/download`;
-                  window.open(downloadUrl, "_blank");
-                } else {
-                  alert("No PDF available for this material.");
-                }
-              });
-            }
-
-            const del = row.querySelector('button[aria-label="delete"]');
-            if (del) {
-              del.addEventListener("click", async () => {
-                if (confirm("Are you sure you want to delete this material?")) {
-                  try {
-                    console.log("Deleting material:", m._id || m.id);
-                    const result = await window.API.deleteMaterial(
-                      m._id || m.id
-                    );
-                    console.log("Delete result:", result);
-                    alert("Material deleted successfully!");
-                    render(); // Refresh the list
-                  } catch (error) {
-                    console.error("Failed to delete material:", error);
-                    alert("Failed to delete material: " + error.message);
-                  }
-                }
-              });
-            }
-          });
-        } catch (error) {
-          console.error("Failed to load uploads:", error);
-          container.innerHTML =
-            '<div class="text-red-500">Failed to load your uploads. Please try again.</div>';
-        }
-      }
-
-      render();
-    } catch (e) {
-      console.error("initMyUploads error", e);
-    }
-  }
-
-  // Initialize My Profile fragment: show profile details and allow editing
-  function initMyProfile() {
-    try {
-      const nameEl = document.getElementById("profileName");
-      const studentIdEl = document.getElementById("profileStudentId");
-      const deptEl = document.getElementById("profileDept");
-      const intakeEl = document.getElementById("profileIntake");
-      const actionsEl = document.getElementById("profileActions");
-
-      // Get current user from localStorage instead of window.App
-      const user = getCurrentUser();
-      if (!nameEl || !actionsEl) return;
-
-      function renderView() {
-        if (!user || !user.id) {
-          nameEl.textContent = "Guest";
-          if (studentIdEl) studentIdEl.textContent = "-";
-          if (deptEl) deptEl.textContent = "-";
-          if (intakeEl) intakeEl.textContent = "-";
-          actionsEl.innerHTML =
-            '<div class="text-sm text-gray-400">Log in to edit your profile.</div>';
-          return;
-        }
-
-        // Display user information
-        nameEl.textContent = user.name || user.email || "User";
-        if (studentIdEl) studentIdEl.textContent = user.studentId || "-";
-        if (intakeEl) intakeEl.textContent = user.intake || "-";
-        if (deptEl) deptEl.textContent = user.department || "-";
-
-        // Additional fields if they exist in the DOM
-        const emailEl = document.getElementById("profileEmail");
-        const genderEl = document.getElementById("profileGender");
-        const sectionEl = document.getElementById("profileSection");
-
-        if (emailEl) emailEl.textContent = user.email || "-";
-        if (genderEl) genderEl.textContent = user.gender || "-";
-        if (sectionEl) sectionEl.textContent = user.section || "-";
-
-        // render persistent picture controls and edit button
-        actionsEl.innerHTML = `
-              <div id="profilePicEditPersistent" class="flex items-center gap-4 mb-3">
-                <input id="profilePicInputPersistent" type="file" accept="image/*" class="hidden" />
-                <button id="changePicBtnPersistent" class="bg-white text-black px-4 py-2 rounded-md">Change Picture</button>
-                <img id="profilePreviewPersistent" src="" alt="preview" class="w-16 h-16 object-cover rounded-md ${
-                  user && user.profilePicUrl ? "" : "hidden"
-                }" />
-              </div>
-              <div>
-                <button id="editBtn" class="bg-gradient-to-r from-teal-500 to-indigo-600 text-white px-6 py-3 rounded-full font-semibold shadow-md hover:opacity-90">Edit Profile</button>
-              </div>
-            `;
-        const editBtn = document.getElementById("editBtn");
-        if (editBtn) editBtn.addEventListener("click", showEdit);
-        // wire persistent picture controls
-        try {
-          const changeBtn = document.getElementById("changePicBtnPersistent");
-          const picInput = document.getElementById("profilePicInputPersistent");
-          const picPreview = document.getElementById(
-            "profilePreviewPersistent"
-          );
-          if (changeBtn && picInput) {
-            changeBtn.addEventListener("click", () => picInput.click());
-          }
-          if (picInput) {
-            picInput.addEventListener("change", (ev) => {
-              const f = ev.target.files && ev.target.files[0];
-              if (!f) return;
-              const r = new FileReader();
-              r.onload = async () => {
-                try {
-                  const data = r.result;
-                  if (picPreview) {
-                    picPreview.src = data;
-                    picPreview.classList.remove("hidden");
-                  }
-                  // Update on server via API and then localStorage
-                  try {
-                    const updatedUser = await window.API.updateUserProfile(
-                      user.id,
-                      { profilePicUrl: data }
-                    );
-
-                    // Update localStorage with the server response
-                    const currentUserData = {
-                      ...user,
-                      profilePicUrl: updatedUser.profilePicUrl,
-                    };
-                    localStorage.setItem(
-                      "currentUser",
-                      JSON.stringify(currentUserData)
-                    );
-
-                    console.log("Profile picture updated successfully!");
-                    renderProfilePic();
-                  } catch (apiError) {
-                    console.error(
-                      "Failed to update profile picture on server:",
-                      apiError
-                    );
-                    // Fallback to localStorage only if server update fails
-                    const updatedUser = { ...user, profilePicUrl: data };
-                    localStorage.setItem(
-                      "currentUser",
-                      JSON.stringify(updatedUser)
-                    );
-                    renderProfilePic();
-                  }
-                } catch (err) {
-                  console.warn("profile pic save failed", err);
-                }
-              };
-              r.readAsDataURL(f);
-            });
-          }
-        } catch (err) {
-          /* ignore */
-        }
-      }
-
-      function showEdit() {
-        // Create and open modal
-        try {
-          // Create modal HTML
-          const modalHTML = `
-            <div id="editProfileModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-                <h2 class="text-xl font-bold mb-4">Edit Profile</h2>
-                <form id="editProfileForm" class="space-y-4">
-                  <div>
-                    <label class="block text-sm font-medium mb-1">Name</label>
-                    <input name="name" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2" required>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium mb-1">Department</label>
-                    <input name="department" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium mb-1">Section</label>
-                    <input name="section" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium mb-1">Intake</label>
-                    <input name="intake" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2">
-                  </div>
-                  <div class="flex gap-3 pt-4">
-                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex-1">Save Changes</button>
-                    <button type="button" id="cancelEditProfile" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 flex-1">Cancel</button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          `;
-
-          // Remove existing modal if any
-          const existingModal = document.getElementById("editProfileModal");
-          if (existingModal) existingModal.remove();
-
-          // Add modal to body
-          document.body.insertAdjacentHTML("beforeend", modalHTML);
-
-          const modal = document.getElementById("editProfileModal");
-          const form = document.getElementById("editProfileForm");
-
-          if (!modal || !form) return;
-
-          // Populate form fields
-          form.elements["name"].value = user.name || "";
-          form.elements["department"].value = user.department || "";
-          form.elements["section"].value =
-            user.section != null ? String(user.section) : "";
-          form.elements["intake"].value = user.intake || "";
-
-          // Handle cancel button
-          const cancelBtn = document.getElementById("cancelEditProfile");
-          if (cancelBtn) {
-            cancelBtn.onclick = () => {
-              modal.remove();
-            };
-          }
-
-          // Handle form submission
-          form.onsubmit = async (e) => {
-            e.preventDefault();
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const originalText = submitBtn.textContent;
-
-            try {
-              submitBtn.textContent = "Saving...";
-              submitBtn.disabled = true;
-
-              const fd = new FormData(form);
-              const updatedData = {
-                name: (fd.get("name") || "").trim(),
-                department: (fd.get("department") || "").trim(),
-                section: (fd.get("section") || "").trim(),
-                intake: (fd.get("intake") || "").trim(),
-              };
-
-              // Update profile via API
-              const updatedUser = await window.API.updateUserProfile(
-                user.id,
-                updatedData
-              );
-
-              // Update localStorage with server response
-              localStorage.setItem("currentUser", JSON.stringify(updatedUser));
-
-              // Re-render profile view
-              renderView();
-              renderProfilePic();
-
-              // Close modal
-              modal.remove();
-
-              console.log("Profile updated successfully!");
-            } catch (err) {
-              console.error("Profile update failed:", err);
-              alert("Failed to update profile. Please try again.");
-            } finally {
-              submitBtn.textContent = originalText;
-              submitBtn.disabled = false;
-            }
-          };
-
-          // Close modal when clicking outside
-          modal.onclick = (e) => {
-            if (e.target === modal) {
-              modal.remove();
-            }
-          };
-        } catch (err) {
-          console.error("Failed to open edit modal:", err);
-        }
-      }
-
-      renderView();
-    } catch (e) {
-      console.error("initMyProfile error", e);
-    }
-  }
+  // Expose renderProfilePic globally for module access
+  window.renderProfilePic = () => {
+    ui.renderProfilePic();
+  };
 
   // Toggle to registration view
   if (showRegisterBtn) {
@@ -1249,7 +97,6 @@ document.addEventListener("DOMContentLoaded", () => {
       quoteView.classList.add("hidden");
       registerView.classList.remove("hidden");
       if (loginForm) loginForm.classList.add("hidden");
-      // move focus to first input
       const first =
         registerForm && registerForm.querySelector('input[name="name"]');
       if (first) first.focus();
@@ -1287,53 +134,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // helper to render profile picture in the sidebar
-  function renderProfilePic() {
-    try {
-      const cu = getCurrentUser();
-      const img = document.getElementById("profilePicImg");
-      const fallback = document.getElementById("profilePicFallback");
-
-      console.log("renderProfilePic called:");
-      console.log("- Current user:", cu);
-      console.log("- Profile pic URL:", cu?.profilePicUrl);
-      console.log("- Image element:", img);
-      console.log("- Fallback element:", fallback);
-
-      if (!img || !fallback) {
-        console.warn("Missing profile pic elements");
-        return;
-      }
-
-      if (cu && cu.profilePicUrl) {
-        console.log("Setting profile image:", cu.profilePicUrl);
-        img.src = cu.profilePicUrl;
-        img.classList.remove("hidden");
-        fallback.classList.add("hidden");
-      } else {
-        console.log("Showing fallback profile pic");
-        img.src = "";
-        img.classList.add("hidden");
-        fallback.classList.remove("hidden");
-      }
-    } catch (e) {
-      console.warn("renderProfilePic error", e);
-    }
-  }
-
   // Register handling using API
   if (registerForm) {
     registerForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const data = Object.fromEntries(new FormData(registerForm).entries());
 
-      // Validate passwords match
       if (data.password !== data.confirmPassword) {
         alert("Passwords do not match.");
         return;
       }
 
-      // Get profile picture data URL if selected
       const pic =
         preview && preview.src && preview.src !== window.location.href
           ? preview.src
@@ -1353,30 +164,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
       try {
         const response = await window.API.register(userData);
-
-        // Store user data in localStorage
-        localStorage.setItem("currentUser", JSON.stringify(response.user));
+        auth.saveUser(response.user);
 
         alert("Registration successful! You are now logged in.");
 
-        // Hide register view and show main app
         registerView.classList.add("hidden");
         quoteView.classList.remove("hidden");
         loginPanel.classList.add("hidden");
         basePanel.classList.remove("hidden");
 
-        // Set up the UI for the logged-in user
         const role = response.user.role;
-        const config = getRoleConfig(role);
+        const config = auth.getRoleConfig(role);
         sidebarButtonLabels = config.labels;
         fragmentMap = config.map;
 
-        renderSidebarButtons();
+        ui.renderSidebarButtons(sidebarButtonLabels, showSection, auth.logout);
         currentUserEl.textContent = response.user.name;
-        renderProfilePic();
+        ui.renderProfilePic();
         showSection("DASHBOARD");
 
-        // Reset form
         registerForm.reset();
         if (preview) {
           preview.src = "";
@@ -1389,42 +195,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Login button hides loginPanel and shows Base
+  // Login handling
   if (loginForm) {
     const loginBtn =
       document.getElementById("loginBtn") || loginForm.querySelector("button");
-    const resetDemoBtn = document.getElementById("resetDemoBtn");
-    if (resetDemoBtn) {
-      resetDemoBtn.addEventListener("click", () => {
-        if (window.App && typeof window.App.resetToSeed === "function") {
-          window.App.resetToSeed();
-          location.reload();
-        }
-      });
-    }
+
     if (loginBtn) {
-      // loginBtn.addEventListener('click', () => {
-      //   const emailVal = document.getElementById('loginEmail')?.value?.toLowerCase() || '';
-      //   const passVal = document.getElementById('loginPassword')?.value || '';
-      //   if (window.App && typeof window.App.login === 'function') {
-      //     const u = window.App.login(emailVal, passVal);
-      //     if (!u) return alert('Invalid credentials (demo)');
-      //     const roleFromUser = (u.role || 'student');
-      //     const cfg = getRoleConfig(roleFromUser);
-      //     sidebarButtonLabels = cfg.labels;
-      //     fragmentMap = cfg.map;
-      //     if (loginPanel) loginPanel.classList.add('hidden');
-      //     if (basePanel) basePanel.classList.remove('hidden');
-      //     renderSidebarButtons();
-      //     // set displayed current user name
-      //     try {
-      //       if (currentUserEl) currentUserEl.textContent = u.name || u.email || 'User';
-      //       // render profile picture
-      //       try { renderProfilePic(); } catch (e) {}
-      //     } catch (e) {}
-      //     showSection('DASHBOARD');
-      //   }
-      // });
       loginBtn.addEventListener("click", async (e) => {
         e.preventDefault();
         const email = document.getElementById("loginEmail").value;
@@ -1432,23 +208,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
           const response = await window.API.login(email, password);
+          auth.saveUser(response.user);
 
-          // Store user data in localStorage
-          localStorage.setItem("currentUser", JSON.stringify(response.user));
-
-          // Handle successful login (same as before)
           const role = response.user.role;
-          const config = getRoleConfig(role);
+          const config = auth.getRoleConfig(role);
           sidebarButtonLabels = config.labels;
           fragmentMap = config.map;
 
-          document.getElementById("loginPanel").classList.add("hidden");
-          document.getElementById("Base").classList.remove("hidden");
+          loginPanel.classList.add("hidden");
+          basePanel.classList.remove("hidden");
 
-          renderSidebarButtons();
-          document.getElementById("currentUser").textContent =
-            response.user.name;
-          renderProfilePic();
+          ui.renderSidebarButtons(
+            sidebarButtonLabels,
+            showSection,
+            auth.logout
+          );
+          currentUserEl.textContent = response.user.name;
+          ui.renderProfilePic();
           showSection("DASHBOARD");
         } catch (error) {
           alert("Login failed: " + error.message);
@@ -1457,36 +233,34 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Check if user is already logged in (has valid token)
+  // Check if user is already logged in
   const token = localStorage.getItem("token");
-  const currentUser = getCurrentUser();
+  const currentUser = auth.getCurrentUser();
 
   if (token && currentUser && currentUser.id) {
-    // User is logged in, show base panel
     if (loginPanel) loginPanel.classList.add("hidden");
     if (basePanel) basePanel.classList.remove("hidden");
 
-    const role = getCurrentUserRole();
-    const cfg = getRoleConfig(role);
+    const role = currentUser.role || "student";
+    const cfg = auth.getRoleConfig(role);
     sidebarButtonLabels = cfg.labels;
     fragmentMap = cfg.map;
-    renderSidebarButtons();
 
-    // Show current user name
+    ui.renderSidebarButtons(sidebarButtonLabels, showSection, auth.logout);
+
     if (currentUserEl) {
       currentUserEl.textContent =
         currentUser.name || currentUser.email || "User";
     }
 
-    // Set banner default
     if (bannerEl) bannerEl.textContent = "DASHBOARD";
 
-    // Render profile picture on initial load
     try {
-      renderProfilePic();
-    } catch (e) {}
+      ui.renderProfilePic();
+    } catch (e) {
+      /* ignore */
+    }
   } else {
-    // No valid login, ensure login panel is visible
     if (loginPanel) loginPanel.classList.remove("hidden");
     if (basePanel) basePanel.classList.add("hidden");
   }
@@ -1541,7 +315,6 @@ document.addEventListener("DOMContentLoaded", () => {
         messageEl.className = "text-sm text-green-600";
         messageEl.classList.remove("hidden");
 
-        // Clear form
         forgotPasswordForm.reset();
 
         setTimeout(() => {
@@ -1610,12 +383,10 @@ document.addEventListener("DOMContentLoaded", () => {
         messageEl.className = "text-sm text-green-600";
         messageEl.classList.remove("hidden");
 
-        // Clear form and close modal after delay
         setTimeout(() => {
           resetPasswordModal.classList.add("hidden");
           resetPasswordForm.reset();
           messageEl.classList.add("hidden");
-          // Remove token from URL
           window.history.replaceState(
             {},
             document.title,
@@ -1637,7 +408,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const urlParams = new URLSearchParams(window.location.search);
   const resetToken = urlParams.get("token");
   if (resetToken && resetPasswordModal) {
-    // Verify token and show reset modal
     window.API.verifyResetToken(resetToken)
       .then(() => {
         resetPasswordModal.classList.remove("hidden");
