@@ -136,6 +136,28 @@ class APIClient {
     });
   }
 
+  // Forgot password methods
+  async forgotPassword(email) {
+    return await this.request("/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async resetPassword(token, newPassword) {
+    return await this.request("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ token, newPassword }),
+    });
+  }
+
+  async verifyResetToken(token) {
+    return await this.request("/auth/verify-reset-token", {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    });
+  }
+
   // Delete material (mark as denied)
   async deleteMaterial(materialId) {
     return await this.updateMaterialStatus(materialId, "denied");

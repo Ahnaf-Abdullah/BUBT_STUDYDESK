@@ -43,6 +43,17 @@
               class="px-4 py-3 rounded-full text-black focus:outline-none"
               required
             />
+            <!-- Forgot Password link -->
+            <div class="text-center">
+              <button
+                id="forgotPasswordBtn"
+                type="button"
+                class="text-white/80 text-sm hover:text-white underline"
+              >
+                Forgot your password?
+              </button>
+            </div>
+
             <button
               id="loginBtn"
               type="button"
@@ -317,6 +328,106 @@
     </div> -->
         </div>
       </main>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div
+      id="forgotPasswordModal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden"
+    >
+      <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <h2 class="text-xl font-bold mb-4 text-black">Reset Password</h2>
+        <form id="forgotPasswordForm" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-1 text-black"
+              >Enter your email address</label
+            >
+            <input
+              id="forgotEmail"
+              type="email"
+              required
+              class="w-full border border-gray-300 rounded-md px-3 py-2 text-black"
+              placeholder="your.email@bubt.edu"
+            />
+          </div>
+          <div
+            id="forgotPasswordMessage"
+            class="text-sm text-gray-600 hidden"
+          ></div>
+          <div class="flex gap-3 pt-4">
+            <button
+              type="submit"
+              id="sendResetBtn"
+              class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex-1"
+            >
+              Send Reset Link
+            </button>
+            <button
+              type="button"
+              id="cancelForgotBtn"
+              class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 flex-1"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Reset Password Modal -->
+    <div
+      id="resetPasswordModal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden"
+    >
+      <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <h2 class="text-xl font-bold mb-4 text-black">Set New Password</h2>
+        <form id="resetPasswordForm" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-1 text-black"
+              >New Password</label
+            >
+            <input
+              id="newPassword"
+              type="password"
+              required
+              minlength="6"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 text-black"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1 text-black"
+              >Confirm New Password</label
+            >
+            <input
+              id="confirmNewPassword"
+              type="password"
+              required
+              minlength="6"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 text-black"
+            />
+          </div>
+          <div
+            id="resetPasswordMessage"
+            class="text-sm text-gray-600 hidden"
+          ></div>
+          <div class="flex gap-3 pt-4">
+            <button
+              type="submit"
+              id="resetPasswordBtn"
+              class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex-1"
+            >
+              Update Password
+            </button>
+            <button
+              type="button"
+              id="cancelResetBtn"
+              class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 flex-1"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
 
     <script src="js/mockdata.js"></script>

@@ -1490,4 +1490,183 @@ document.addEventListener("DOMContentLoaded", () => {
     if (loginPanel) loginPanel.classList.remove("hidden");
     if (basePanel) basePanel.classList.add("hidden");
   }
+
+  // Forgot Password functionality
+  const forgotPasswordBtn = document.getElementById("forgotPasswordBtn");
+  const forgotPasswordModal = document.getElementById("forgotPasswordModal");
+  const forgotPasswordForm = document.getElementById("forgotPasswordForm");
+  const cancelForgotBtn = document.getElementById("cancelForgotBtn");
+  const resetPasswordModal = document.getElementById("resetPasswordModal");
+  const resetPasswordForm = document.getElementById("resetPasswordForm");
+  const cancelResetBtn = document.getElementById("cancelResetBtn");
+
+  // Open forgot password modal
+  if (forgotPasswordBtn && forgotPasswordModal) {
+    forgotPasswordBtn.addEventListener("click", () => {
+      forgotPasswordModal.classList.remove("hidden");
+      document.getElementById("forgotEmail").focus();
+    });
+  }
+
+  // Close forgot password modal
+  if (cancelForgotBtn && forgotPasswordModal) {
+    cancelForgotBtn.addEventListener("click", () => {
+      forgotPasswordModal.classList.add("hidden");
+      document.getElementById("forgotPasswordForm").reset();
+      document.getElementById("forgotPasswordMessage").classList.add("hidden");
+    });
+  }
+
+  // Handle forgot password form submission
+  if (forgotPasswordForm) {
+    forgotPasswordForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("forgotEmail").value.trim();
+      const sendBtn = document.getElementById("sendResetBtn");
+      const messageEl = document.getElementById("forgotPasswordMessage");
+
+      if (!email) {
+        alert("Please enter your email address");
+        return;
+      }
+
+      try {
+        sendBtn.textContent = "Sending...";
+        sendBtn.disabled = true;
+
+        await window.API.forgotPassword(email);
+
+        messageEl.textContent =
+          "Reset link sent to your email! Check your inbox.";
+        messageEl.className = "text-sm text-green-600";
+        messageEl.classList.remove("hidden");
+
+        // Clear form
+        forgotPasswordForm.reset();
+
+        setTimeout(() => {
+          forgotPasswordModal.classList.add("hidden");
+          messageEl.classList.add("hidden");
+        }, 3000);
+      } catch (error) {
+        messageEl.textContent = "Failed to send reset link: " + error.message;
+        messageEl.className = "text-sm text-red-600";
+        messageEl.classList.remove("hidden");
+      } finally {
+        sendBtn.textContent = "Send Reset Link";
+        sendBtn.disabled = false;
+      }
+    });
+  }
+
+  // Close reset password modal
+  if (cancelResetBtn && resetPasswordModal) {
+    cancelResetBtn.addEventListener("click", () => {
+      resetPasswordModal.classList.add("hidden");
+      document.getElementById("resetPasswordForm").reset();
+      document.getElementById("resetPasswordMessage").classList.add("hidden");
+    });
+  }
+
+  // Handle reset password form submission
+  if (resetPasswordForm) {
+    resetPasswordForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const newPassword = document.getElementById("newPassword").value;
+      const confirmPassword =
+        document.getElementById("confirmNewPassword").value;
+      const resetBtn = document.getElementById("resetPasswordBtn");
+      const messageEl = document.getElementById("resetPasswordMessage");
+
+      if (newPassword !== confirmPassword) {
+        messageEl.textContent = "Passwords do not match";
+        messageEl.className = "text-sm text-red-600";
+        messageEl.classList.remove("hidden");
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        messageEl.textContent = "Password must be at least 6 characters";
+        messageEl.className = "text-sm text-red-600";
+        messageEl.classList.remove("hidden");
+        return;
+      }
+
+      try {
+        resetBtn.textContent = "Updating...";
+        resetBtn.disabled = true;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get("token");
+
+        if (!token) {
+          throw new Error("Invalid reset token");
+        }
+
+        await window.API.resetPassword(token, newPassword);
+
+        messageEl.textContent =
+          "Password updated successfully! You can now login.";
+        messageEl.className = "text-sm text-green-600";
+        messageEl.classList.remove("hidden");
+
+        // Clear form and close modal after delay
+        setTimeout(() => {
+          resetPasswordModal.classList.add("hidden");
+          resetPasswordForm.reset();
+          messageEl.classList.add("hidden");
+          // Remove token from URL
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname
+          );
+        }, 2000);
+      } catch (error) {
+        messageEl.textContent = "Failed to reset password: " + error.message;
+        messageEl.className = "text-sm text-red-600";
+        messageEl.classList.remove("hidden");
+      } finally {
+        resetBtn.textContent = "Update Password";
+        resetBtn.disabled = false;
+      }
+    });
+  }
+
+  // Check for reset token in URL on page load
+  const urlParams = new URLSearchParams(window.location.search);
+  const resetToken = urlParams.get("token");
+  if (resetToken && resetPasswordModal) {
+    // Verify token and show reset modal
+    window.API.verifyResetToken(resetToken)
+      .then(() => {
+        resetPasswordModal.classList.remove("hidden");
+        document.getElementById("newPassword").focus();
+      })
+      .catch(() => {
+        alert("Invalid or expired reset token");
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.pathname
+        );
+      });
+  }
+
+  // Close modals when clicking outside
+  if (forgotPasswordModal) {
+    forgotPasswordModal.addEventListener("click", (e) => {
+      if (e.target === forgotPasswordModal) {
+        forgotPasswordModal.classList.add("hidden");
+      }
+    });
+  }
+
+  if (resetPasswordModal) {
+    resetPasswordModal.addEventListener("click", (e) => {
+      if (e.target === resetPasswordModal) {
+        resetPasswordModal.classList.add("hidden");
+      }
+    });
+  }
 });

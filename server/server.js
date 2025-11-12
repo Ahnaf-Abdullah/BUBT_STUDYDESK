@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
+const path = require("path");
 require("dotenv").config();
 
 const authRoutes = require("./routes/auth");
@@ -36,6 +37,12 @@ app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 // Static file serving
 app.use("/uploads", express.static("uploads"));
 
+// Serve static files from parent directory (frontend files)
+app.use(express.static(path.join(__dirname, "..")));
+app.use("/js", express.static(path.join(__dirname, "..", "js")));
+app.use("/img", express.static(path.join(__dirname, "..", "img")));
+app.use("/fragments", express.static(path.join(__dirname, "..", "fragments")));
+
 // Database connection
 mongoose
   .connect(process.env.MONGO_URI, {
@@ -51,12 +58,17 @@ mongoose
   })
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-// Routes
+// API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/departments", departmentRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/materials", materialRoutes);
+
+// Root route - serve index.html
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "index.html"));
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
