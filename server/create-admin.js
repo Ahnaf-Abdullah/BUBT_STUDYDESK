@@ -46,7 +46,7 @@ async function createAdmin() {
       gender: "other",
       section: 1,
       intake: "N/A",
-      profilePicUrl: "",
+      profilePicUrl: "img/1.png",
       isActive: true,
     });
 

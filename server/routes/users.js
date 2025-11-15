@@ -64,4 +64,43 @@ router.patch("/:id/role", authMiddleware, async (req, res) => {
   }
 });
 
+// PATCH /api/users/:id/profile - Update user profile (user can update their own profile)
+router.patch("/:id/profile", authMiddleware, async (req, res) => {
+  try {
+    // Users can only update their own profile unless they're admin
+    if (req.user.id !== req.params.id && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const allowedUpdates = [
+      "name",
+      "profilePicUrl",
+      "department",
+      "section",
+      "intake",
+    ];
+    const updates = {};
+
+    // Only allow specific fields to be updated
+    Object.keys(req.body).forEach((key) => {
+      if (allowedUpdates.includes(key)) {
+        updates[key] = req.body[key];
+      }
+    });
+
+    const user = await User.findByIdAndUpdate(req.params.id, updates, {
+      new: true,
+      select: "-password",
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;

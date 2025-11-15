@@ -1,83 +1,140 @@
-<div class="bg-gradient-to-r from-teal-500/10 via-teal-700/20 to-indigo-900/40 p-8 rounded-3xl backdrop-blur-sm ring-1 ring-white/5">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+<div
+  class="bg-gradient-to-r from-teal-500/10 via-teal-700/20 to-indigo-900/40 p-8 rounded-3xl backdrop-blur-sm ring-1 ring-white/5"
+>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+    <!-- Left column -->
+    <div class="space-y-8">
+      <div>
+        <p class="text-sm font-semibold text-white/70">NAME:</p>
+        <p id="profileName" class="text-3xl font-medium mt-2 text-white">
+          USER'S NAME
+        </p>
+      </div>
 
-        <!-- Left column -->
-        <div class="space-y-8">
-          <div>
-            <p class="text-sm font-semibold text-white/70">NAME:</p>
-            <p id="profileName" class="text-3xl font-medium mt-2 text-white">USER'S NAME</p>
-          </div>
+      <div>
+        <p class="text-sm font-semibold text-white/70">Student ID:</p>
+        <p id="profileStudentId" class="text-3xl font-medium mt-2 text-white">
+          USER'S ID
+        </p>
+      </div>
 
-          <div>
-            <p class="text-sm font-semibold text-white/70">Student ID:</p>
-            <p id="profileStudentId" class="text-3xl font-medium mt-2 text-white">USER'S ID</p>
-          </div>
+      <div>
+        <p class="text-sm font-semibold text-white/70">INTAKE:</p>
+        <p id="profileIntake" class="text-3xl font-medium mt-2 text-white">
+          USER'S INTAKE
+        </p>
+      </div>
 
-          <div>
-            <p class="text-sm font-semibold text-white/70">INTAKE:</p>
-            <p id="profileIntake" class="text-3xl font-medium mt-2 text-white">USER'S INTAKE</p>
-          </div>
-
-          <div>
-            <p class="text-sm font-semibold text-white/70">GENDER:</p>
-            <p id="profileGender" class="text-3xl font-medium mt-2 text-white">USER'S GENDER</p>
-          </div>
-        </div>
-
-        <!-- Right column -->
-        <div class="space-y-8">
-          <div>
-            <p class="text-sm font-semibold text-white/70">DEPT:</p>
-            <p id="profileDept" class="text-3xl font-medium mt-2 text-white">DEPT NAME</p>
-          </div>
-
-          <div>
-            <p class="text-sm font-semibold text-white/70">EMAIL:</p>
-            <p id="profileEmail" class="text-2xl font-medium mt-2 text-white">user@example.com</p>
-          </div>
-
-          <!-- other profile fields moved to left column -->
-
-          <div class="mt-8">
-            <div id="profileActions">
-              <div id="profilePicEdit" class="flex items-center gap-4">
-                <input id="profilePicInputPersistent" type="file" accept="image/*" class="hidden" />
-                <button id="changePicBtnPersistent" class="bg-white text-black px-4 py-2 rounded-md">Change Picture</button>
-                <img id="profilePreviewPersistent" src="" alt="preview" class="w-16 h-16 object-cover rounded-md hidden" />
-              </div>
-              <div class="mt-4">
-                <button id="editBtn" class="bg-gradient-to-r from-teal-500 to-indigo-600 text-white px-6 py-3 rounded-full font-semibold shadow-md hover:opacity-90">Edit Profile</button>
-              </div>
-            </div>
-          </div>
-        </div>
-        
+      <div>
+        <p class="text-sm font-semibold text-white/70">GENDER:</p>
+        <p id="profileGender" class="text-3xl font-medium mt-2 text-white">
+          USER'S GENDER
+        </p>
       </div>
     </div>
 
-    <!-- Edit Profile Modal (hidden by default) -->
-    <div id="editProfileModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center">
-      <div class="bg-white text-black rounded-2xl p-6 w-full max-w-2xl">
-        <h3 class="text-xl font-bold mb-4">Edit Profile</h3>
-        <form id="editProfileForm" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <input name="name" placeholder="Full name" class="px-3 py-2 rounded-md" />
-          <input name="email" placeholder="Email" class="px-3 py-2 rounded-md" />
-          <input name="studentId" placeholder="Student ID" class="px-3 py-2 rounded-md" />
-          <select name="gender" class="px-3 py-2 rounded-md">
-            <option value="">Select gender</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
-          <input name="department" placeholder="Department" class="px-3 py-2 rounded-md" />
-          <input name="section" type="number" placeholder="Section" class="px-3 py-2 rounded-md" />
-          <input name="intake" placeholder="Intake" class="px-3 py-2 rounded-md" />
-          <div class="col-span-2 flex items-center justify-end gap-2 mt-2">
-            <button type="button" id="cancelEditProfile" class="px-4 py-2 rounded-md bg-gray-200">Cancel</button>
-            <button type="submit" class="px-4 py-2 rounded-md bg-gradient-to-r from-teal-500 to-indigo-600 text-white">Save</button>
+    <!-- Right column -->
+    <div class="space-y-8">
+      <div>
+        <p class="text-sm font-semibold text-white/70">DEPT:</p>
+        <p id="profileDept" class="text-3xl font-medium mt-2 text-white">
+          DEPT NAME
+        </p>
+      </div>
+
+      <div>
+        <p class="text-sm font-semibold text-white/70">EMAIL:</p>
+        <p id="profileEmail" class="text-2xl font-medium mt-2 text-white">
+          user@example.com
+        </p>
+      </div>
+
+      <!-- other profile fields moved to left column -->
+
+      <div class="mt-8">
+        <div id="profileActions">
+          <div id="profilePicEdit" class="flex items-center gap-4">
+            <input
+              id="profilePicInputPersistent"
+              type="file"
+              accept="image/*"
+              class="hidden"
+            />
+            <button
+              id="changePicBtnPersistent"
+              class="bg-white text-black px-4 py-2 rounded-md"
+            >
+              Change Picture
+            </button>
+            <img
+              id="profilePreviewPersistent"
+              src=""
+              alt="preview"
+              class="w-16 h-16 object-cover rounded-md hidden"
+            />
           </div>
-        </form>
+          <div class="mt-4">
+            <button
+              id="editBtn"
+              class="bg-gradient-to-r from-teal-500 to-indigo-600 text-white px-6 py-3 rounded-full font-semibold shadow-md hover:opacity-90"
+            >
+              Edit Profile
+            </button>
+          </div>
+        </div>
       </div>
     </div>
+  </div>
+</div>
 
-    
+<!-- Edit Profile Modal (hidden by default) -->
+<div
+  id="editProfileModal"
+  class="fixed inset-0 bg-black/50 hidden items-center justify-center"
+>
+  <div class="bg-white text-black rounded-2xl p-6 w-full max-w-2xl">
+    <h3 class="text-xl font-bold mb-4">Edit Profile</h3>
+    <form id="editProfileForm" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <input name="name" placeholder="Full name" class="px-3 py-2 rounded-md" />
+      <input name="email" placeholder="Email" class="px-3 py-2 rounded-md" />
+      <input
+        name="studentId"
+        placeholder="Student ID"
+        class="px-3 py-2 rounded-md"
+      />
+      <select name="gender" class="px-3 py-2 rounded-md">
+        <option value="">Select gender</option>
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+        <option value="other">Other</option>
+      </select>
+      <input
+        name="department"
+        placeholder="Department"
+        class="px-3 py-2 rounded-md"
+      />
+      <input
+        name="section"
+        type="number"
+        placeholder="Section"
+        class="px-3 py-2 rounded-md"
+      />
+      <input name="intake" placeholder="Intake" class="px-3 py-2 rounded-md" />
+      <div class="col-span-2 flex items-center justify-end gap-2 mt-2">
+        <button
+          type="button"
+          id="cancelEditProfile"
+          class="px-4 py-2 rounded-md bg-gray-200"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="px-4 py-2 rounded-md bg-gradient-to-r from-teal-500 to-indigo-600 text-white"
+        >
+          Save
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

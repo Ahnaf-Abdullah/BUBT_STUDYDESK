@@ -17,6 +17,9 @@ const userSchema = new mongoose.Schema(
     intake: { type: String },
     profilePicUrl: { type: String, default: "" },
     isActive: { type: Boolean, default: true },
+    // Password reset fields
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
   },
   { timestamps: true }
 );

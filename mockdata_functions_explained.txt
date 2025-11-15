@@ -1,0 +1,68 @@
+# mockdata.js: Function Explanations
+
+This document explains each function defined in `mockdata.js` and its role in the demo app.
+
+---
+
+## load()
+- **Purpose**: Loads the app state from localStorage, or falls back to the initial seed data if not found or if an error occurs.
+- **Returns**: The current app state object.
+- **Notes**: Ensures the app always has valid data, even if localStorage is empty or corrupted.
+
+## save(state)
+- **Purpose**: Saves the provided state object to localStorage under the key `bubt_demo_app_v1`.
+- **Returns**: None.
+- **Notes**: Persists all changes made to the app data so they survive page reloads.
+
+## App.init()
+- **Purpose**: Initialization hook for the app. Currently a no-op, but can be extended for setup logic.
+- **Returns**: None.
+- **Notes**: Called once at the end of the script to ensure getters reflect the saved state.
+
+## App.login(email, password)
+- **Purpose**: Authenticates a user by email and password (case-insensitive for demo).
+- **Returns**: The user object if login succeeds, or null if it fails.
+- **Notes**: Sets the logged-in user in the app state and persists it. On failure, logs available demo accounts to the console for debugging.
+
+## App.logout()
+- **Purpose**: Logs out the current user by clearing `currentUserEmail`.
+- **Returns**: None.
+- **Notes**: Persists the change to localStorage.
+
+## App.register(userData)
+- **Purpose**: Registers a new user with provided data (name, email, password, etc.), assigns a new ID, and logs them in.
+- **Returns**: The newly created user object.
+- **Notes**: Adds the user to the users array, sets them as current, and saves the state.
+
+## App.addDepartment(name)
+- **Purpose**: Adds a new department to the departments array.
+- **Returns**: The newly created department object.
+- **Notes**: Assigns a new ID and persists the change.
+
+## App.addCourse(departmentId, name, code)
+- **Purpose**: Adds a new course to the courses array, linked to a department.
+- **Returns**: The newly created course object.
+- **Notes**: Assigns a new ID and persists the change.
+
+## App.changeMaterialStatus(id, status)
+- **Purpose**: Updates the status (e.g., pending, approved, denied) of a material by its ID.
+- **Returns**: The updated material object, or null if not found.
+- **Notes**: Persists the change.
+
+## App.updateUserRole(id, role)
+- **Purpose**: Changes the role (student, moderator, admin) of a user by their ID.
+- **Returns**: The updated user object, or null if not found.
+- **Notes**: Persists the change.
+
+## App.addMaterial(title, courseCode, uploader)
+- **Purpose**: Adds a new material (study resource) to the materials array.
+- **Returns**: The newly created material object.
+- **Notes**: Assigns a new ID, sets status to 'pending', and persists the change. Uploader defaults to current user name or 'guest'.
+
+## App.resetToSeed()
+- **Purpose**: Resets the app state to the original seed data, clearing all changes.
+- **Returns**: The reset state object, or null if an error occurs.
+- **Notes**: Useful for demo/testing. Persists the reset state.
+
+---
+End of function explanations.

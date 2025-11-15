@@ -1,0 +1,64 @@
+Project theme tokens and UI guidelines
+-----------------------------------
+
+Primary colors (Tailwind classes)
+- Primary teal (accent): from-teal-500
+- Primary teal light: from-teal-400
+- Primary teal dark: from-teal-700
+- Indigo accent: to-indigo-600 / to-indigo-700 / to-indigo-900
+
+Background and page
+- Page background: bg-[#0a0a3b] (deep navy)
+- Page text color: text-white
+
+Sidebar (recommended)
+- Option A (Gradient, used in final design):
+	- Classes: bg-gradient-to-b from-teal-400 to-indigo-700 ring-1 ring-white/8 p-6 rounded-r-3xl
+	- Text: text-white
+	- Notes: keeps a strong teal-indigo identity and works well on the dark page background.
+
+- Option B (Frosted glass variant):
+	- Classes: bg-white/6 backdrop-blur-md ring-1 ring-white/8 p-6 rounded-r-3xl
+	- Text: text-white
+	- Notes: translucent, modern, shows background art. Adjust opacity or blur to change prominence.
+
+Sidebar content guidance
+- Profile pic: white rounded box (bg-white text-black) for contrast.
+- Username panel: bg-white text-black rounded-2xl for legibility.
+- Sidebar CTA buttons: use bg-white text-black with rounded-2xl. Keep them full width for clear targets.
+
+Top Banner (Dept / Course pill)
+- Layout: horizontal flex with left large pill and right course-code pill.
+- Left pill classes: bg-teal-100/90 text-black rounded-3xl px-8 py-6 text-4xl font-extrabold
+- Right pill classes: bg-teal-100/90 text-black rounded-3xl px-6 py-4 font-bold
+- Notes: using light teal pill contrasts with the dark page and gives a branded header look.
+
+Main panel / content cards
+- Panel background (soft gradient): bg-gradient-to-r from-teal-500/10 via-teal-700/20 to-indigo-900/40 p-8 rounded-3xl backdrop-blur-sm ring-1 ring-white/5
+- Add button: bg-gradient-to-r from-teal-500 to-indigo-600 text-black rounded-full px-8 py-3
+- Material cards / buttons: bg-gradient-to-r from-teal-500 to-indigo-600 text-black rounded-3xl py-6 px-6 text-xl
+
+Buttons and interaction
+- Hover: add transform hover:scale-105 transition duration-150 and shadow-sm -> hover:shadow-md for elevation.
+- Active / focus: use ring-2 ring-teal-300/60 for keyboard focus visibility.
+
+Typography
+- Heading sizes: large banner ~text-4xl to text-[50px] (use responsive sizes if needed).
+- Body / button: text-xl for material items to make them easy to tap/click.
+
+Spacing and layout
+- Sidebar width: w-64
+- Page padding: main uses p-8 to p-10 depending on page breathing room.
+- Card radius: use rounded-2xl -> rounded-3xl for panels and large interactive elements.
+
+Accessibility notes
+- Ensure sufficient contrast for text on light pills (use text-black on teal-100 variants).
+- Provide focus outlines for interactive elements using ring utilities.
+
+How to use
+- Copy the token classes as-is into your HTML elements.
+- Prefer using the gradient classes for primary accents and pill backgrounds for contrast.
+- If using background artwork, prefer the frosted glass sidebar variant to reveal the art while keeping legible controls.
+
+Version: 1.0
+Author: UI theme guide for BUBT Study Desk

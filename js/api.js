@@ -73,10 +73,18 @@ class APIClient {
     return await this.request(`/courses${query}`);
   }
 
-  async addCourse(courseData) {
+  async getCoursesByDepartment(departmentId) {
+    return await this.request(`/courses?departmentId=${departmentId}`);
+  }
+
+  async getMaterialsByCourse(courseId) {
+    return await this.request(`/materials?courseId=${courseId}`);
+  }
+
+  async addCourse(departmentId, code, name) {
     return await this.request("/courses", {
       method: "POST",
-      body: JSON.stringify(courseData),
+      body: JSON.stringify({ departmentId, code, name }),
     });
   }
 
@@ -126,6 +134,35 @@ class APIClient {
     return await this.request(`/users/${userId}/role`, {
       method: "PATCH",
       body: JSON.stringify({ role }),
+    });
+  }
+
+  async updateUserProfile(userId, profileData) {
+    return await this.request(`/users/${userId}/profile`, {
+      method: "PATCH",
+      body: JSON.stringify(profileData),
+    });
+  }
+
+  // Forgot password methods
+  async forgotPassword(email) {
+    return await this.request("/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async resetPassword(token, newPassword) {
+    return await this.request("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ token, newPassword }),
+    });
+  }
+
+  async verifyResetToken(token) {
+    return await this.request("/auth/verify-reset-token", {
+      method: "POST",
+      body: JSON.stringify({ token }),
     });
   }
 
