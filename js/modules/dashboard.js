@@ -85,7 +85,7 @@ export const dashboard = {
         if (role === "admin") {
           actions.innerHTML = `
             <div id="addDeptWrap" class="flex items-center gap-2">
-              <input id="newDeptName" placeholder="New department name" class="px-3 py-2 rounded-md text-black" />
+              <input id="newDeptName" placeholder="New department name" class="px-3 py-2 rounded-md text-white bg-gray-700" />
               <button id="addDeptBtn" class="bg-gradient-to-r from-indigo-500 to-indigo-700 text-white px-3 py-2 rounded-md">Add Department</button>
             </div>
           `;
@@ -153,7 +153,7 @@ export const dashboard = {
       // Show courses for selected department
       const showCoursesForDepartment = async (department) => {
         container.innerHTML =
-          '<div class="text-gray-500">Loading courses...</div>';
+          '<div class="text-white">Loading courses...</div>';
         let courses = [];
         try {
           courses = await window.API.getCoursesByDepartment(
@@ -168,7 +168,7 @@ export const dashboard = {
         const header = document.createElement("div");
         header.className = "mb-4";
         header.innerHTML = `
-          <h2 class="text-2xl font-bold text-gray-800 mb-2">${escapeHtml(
+          <h2 class="text-2xl font-bold text-white mb-2">${escapeHtml(
             department.name
           )} - Courses</h2>
           <button id="backToDeps" class="bg-gray-300 text-black px-3 py-2 rounded-md">← Back to Departments</button>
@@ -180,8 +180,8 @@ export const dashboard = {
           const actions = document.createElement("div");
           actions.className = "mb-4 flex gap-2";
           actions.innerHTML = `
-            <input id="newCourseCode" placeholder="Course Code" class="px-3 py-2 rounded-md text-black" />
-            <input id="newCourseName" placeholder="Course Name" class="px-3 py-2 rounded-md text-black" />
+            <input id="newCourseCode" placeholder="Course Code" class="px-3 py-2 rounded-md text-white bg-gray-700" />
+            <input id="newCourseName" placeholder="Course Name" class="px-3 py-2 rounded-md text-white bg-gray-700" />
             <button id="addCourseBtn" class="bg-gradient-to-r from-teal-500 to-indigo-600 text-white px-3 py-2 rounded-md">Add Course</button>
           `;
           container.appendChild(actions);
@@ -268,7 +268,7 @@ export const dashboard = {
         const header = document.createElement("div");
         header.className = "mb-4";
         header.innerHTML = `
-          <h2 class="text-2xl font-bold text-gray-800">${escapeHtml(
+          <h2 class="text-2xl font-bold text-white">${escapeHtml(
             course.code
           )} - ${escapeHtml(course.name)}</h2>
           <p class="text-sm text-gray-600 mt-1">${escapeHtml(
@@ -286,10 +286,10 @@ export const dashboard = {
         addWrap.id = "addMaterialWrap";
         addWrap.className = "hidden mb-4 p-4 bg-white/90 rounded-xl";
         addWrap.innerHTML = `
-          <h3 class="font-bold mb-2 text-black">Upload New Material (PDF)</h3>
+          <h3 class="font-bold mb-2 text-white">Upload New Material (PDF)</h3>
           <form id="addMaterialForm" class="flex flex-col gap-2">
             <input name="title" placeholder="Material Title" required class="px-3 py-2 rounded-md text-black" />
-            <input name="pdf" type="file" accept="application/pdf" required class="px-3 py-2 rounded-md text-black" />
+            <input name="pdf" type="file" accept="application/pdf" required class="px-3 py-2 rounded-md text-black bg-amber-200" />
             <div class="flex gap-2">
               <button type="submit" class="bg-green-600 text-white px-3 py-2 rounded-md">Upload</button>
               <button type="button" id="cancelAddMaterial" class="bg-gray-400 text-white px-3 py-2 rounded-md">Cancel</button>
@@ -321,6 +321,9 @@ export const dashboard = {
             const uploaderName = m.uploader
               ? m.uploader.name || m.uploader
               : "Unknown";
+            const downloadUrl = `${window.API.baseURL}/materials/${
+              m._id || m.id
+            }/download`;
             item.innerHTML = `
               <div>
                 <div class="font-semibold text-black">${escapeHtml(
@@ -330,9 +333,7 @@ export const dashboard = {
                   uploaderName
                 )}</div>
               </div>
-              <a href="${
-                m.fileUrl
-              }" target="_blank" class="bg-teal-600 text-white px-3 py-1 rounded-md">Download PDF</a>
+              <a href="${downloadUrl}" target="_blank" class="bg-teal-600 text-white px-3 py-1 rounded-md">Download PDF</a>
             `;
             list.appendChild(item);
           });

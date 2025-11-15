@@ -73,10 +73,18 @@ class APIClient {
     return await this.request(`/courses${query}`);
   }
 
-  async addCourse(courseData) {
+  async getCoursesByDepartment(departmentId) {
+    return await this.request(`/courses?departmentId=${departmentId}`);
+  }
+
+  async getMaterialsByCourse(courseId) {
+    return await this.request(`/materials?courseId=${courseId}`);
+  }
+
+  async addCourse(departmentId, code, name) {
     return await this.request("/courses", {
       method: "POST",
-      body: JSON.stringify(courseData),
+      body: JSON.stringify({ departmentId, code, name }),
     });
   }
 
