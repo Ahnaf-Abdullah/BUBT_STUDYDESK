@@ -21,29 +21,99 @@ router.post("/register", async (req, res) => {
       profilePicUrl,
     } = req.body;
 
+    // Validate required fields
+    if (!name || !email || !password || !studentId || !section) {
+      return res.status(400).json({
+        message: "Name, email, password, student ID, and section are required",
+      });
+    }
+
+    // BUBT email validation
+    const bubtEmailRegex =
+      /^[0-9]{11}@(cse|bba|eee|txt|mcn|llb|eng)\.bubt\.edu\.bd$/i;
+    if (!bubtEmailRegex.test(email)) {
+      return res.status(400).json({
+        message:
+          "Please use your BUBT institutional email. Format: studentId@department.bubt.edu.bd (Departments: CSE, BBA, EEE, TXT, MCN, LLB, ENG)",
+      });
+    }
+
+    // Extract student ID from email for validation
+    const emailStudentId = email.toLowerCase().split("@")[0];
+    if (emailStudentId !== studentId) {
+      return res.status(400).json({
+        message: "Student ID must match the ID in your email address",
+      });
+    }
+
+    // Extract department from email
+    const emailDepartment = email
+      .toLowerCase()
+      .split("@")[1]
+      .split(".")[0]
+      .toUpperCase();
+    const departmentMapping = {
+      CSE: "Computer Science & Engineering",
+      BBA: "Business Administration",
+      EEE: "Electrical & Electronic Engineering",
+      TXT: "Textile Engineering",
+      MCN: "Mechanical Engineering",
+      LLB: "Law",
+      ENG: "English",
+    };
+
+    // Validate department consistency
+    if (!departmentMapping[emailDepartment]) {
+      return res.status(400).json({
+        message: "Invalid department in email address",
+      });
+    }
+
+    // Auto-set department based on email
+    const validatedDepartment = departmentMapping[emailDepartment];
+
+    // Student ID validation (11 digits)
+    if (!/^[0-9]{11}$/.test(studentId)) {
+      return res.status(400).json({
+        message: "Student ID must be exactly 11 digits",
+      });
+    }
+
+    // Password validation
+    if (password.length < 6) {
+      return res.status(400).json({
+        message: "Password must be at least 6 characters long",
+      });
+    }
+
     // Check if user exists
     const existingUser = await User.findOne({
-      $or: [{ email }, { studentId }],
+      $or: [{ email: email.toLowerCase() }, { studentId }],
     });
     if (existingUser) {
-      return res
-        .status(400)
-        .json({ message: "Email or Student ID already exists" });
+      if (existingUser.email === email.toLowerCase()) {
+        return res.status(400).json({ message: "Email already registered" });
+      }
+      if (existingUser.studentId === studentId) {
+        return res
+          .status(400)
+          .json({ message: "Student ID already registered" });
+      }
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create user
+    // Create user with validated data
     const user = new User({
       name,
-      email,
+      email: email.toLowerCase(),
       password: hashedPassword,
-      department,
+      department: validatedDepartment, // Use mapped department name
       studentId,
-      gender,
+      gender: gender || "other",
       section,
-      intake,
+      intake: intake || "N/A",
       profilePicUrl: profilePicUrl || "img/1.png",
     });
 
@@ -127,6 +197,15 @@ router.post("/forgot-password", async (req, res) => {
 
     if (!email) {
       return res.status(400).json({ message: "Email is required" });
+    }
+
+    // Validate BUBT email format
+    const bubtEmailRegex =
+      /^[0-9]{11}@(cse|bba|eee|txt|mcn|llb|eng)\.bubt\.edu\.bd$/i;
+    if (!bubtEmailRegex.test(email)) {
+      return res.status(400).json({
+        message: "Please use your BUBT institutional email address",
+      });
     }
 
     const user = await User.findOne({ email: email.toLowerCase() });

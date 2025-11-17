@@ -140,6 +140,47 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       const data = Object.fromEntries(new FormData(registerForm).entries());
 
+      // Validate required fields
+      if (
+        !data.name ||
+        !data.email ||
+        !data.password ||
+        !data.studentId ||
+        !data.section
+      ) {
+        alert("Please fill in all required fields");
+        return;
+      }
+
+      // BUBT email validation
+      const bubtEmailRegex =
+        /^[0-9]{11}@(cse|bba|eee|txt|mcn|llb|eng)\.bubt\.edu\.bd$/i;
+      if (!bubtEmailRegex.test(data.email)) {
+        alert(
+          "Please use your BUBT institutional email.\nFormat: studentId@department.bubt.edu.bd\nValid departments: CSE, BBA, EEE, TXT, MCN, LLB, ENG\n\nMCN = Mechanical Engineering"
+        );
+        return;
+      }
+
+      // Student ID validation
+      if (!/^[0-9]{11}$/.test(data.studentId)) {
+        alert("Student ID must be exactly 11 digits");
+        return;
+      }
+
+      // Check if student ID matches email
+      const emailStudentId = data.email.toLowerCase().split("@")[0];
+      if (emailStudentId !== data.studentId) {
+        alert("Student ID must match the ID in your email address");
+        return;
+      }
+
+      // Password validation
+      if (data.password.length < 6) {
+        alert("Password must be at least 6 characters long");
+        return;
+      }
+
       if (data.password !== data.confirmPassword) {
         alert("Passwords do not match.");
         return;
@@ -152,9 +193,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const userData = {
         name: data.name,
-        email: data.email,
+        email: data.email.toLowerCase(),
         password: data.password,
-        department: data.department,
         studentId: data.studentId,
         gender: data.gender,
         section: parseInt(data.section) || 1,
