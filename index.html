@@ -151,10 +151,15 @@
                   <input
                     name="studentId"
                     type="text"
-                    value="22235103204"
+                    placeholder="22235103204"
                     required
+                    maxlength="11"
+                    pattern="[0-9]{11}"
                     class="w-full px-3 py-2 rounded-md focus:outline-none"
                   />
+                  <p class="text-xs text-white/80 mt-1">
+                    Must be 11 digits and match your email
+                  </p>
                 </div>
 
                 <div>
@@ -175,25 +180,22 @@
               <!-- Right column -->
               <div class="col-span-1 space-y-4">
                 <div>
-                  <label class="block font-semibold text-sm mb-1">Email</label>
+                  <label class="block font-semibold text-sm mb-1"
+                    >BUBT Email</label
+                  >
                   <input
                     name="email"
                     type="email"
+                    placeholder="22235103204@cse.bubt.edu.bd"
                     required
                     class="w-full px-3 py-2 rounded-md focus:outline-none"
                   />
-                </div>
-
-                <div>
-                  <label class="block font-semibold text-sm mb-1"
-                    >Department</label
-                  >
-                  <input
-                    name="department"
-                    type="text"
-                    required
-                    class="w-full px-3 py-2 rounded-md focus:outline-none"
-                  />
+                  <p class="text-xs text-white/80 mt-1">
+                    Format: studentId@dept.bubt.edu.bd
+                  </p>
+                  <p class="text-xs text-white/70 mt-0.5">
+                    Depts: CSE, BBA, EEE, TXT, MCN, LLB, ENG
+                  </p>
                 </div>
 
                 <div>
@@ -201,7 +203,7 @@
                   <input
                     name="intake"
                     type="text"
-                    required
+                    placeholder="Spring 2023"
                     class="w-full px-3 py-2 rounded-md focus:outline-none"
                   />
                 </div>
